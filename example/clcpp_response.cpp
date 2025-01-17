@@ -15,16 +15,26 @@
  along with this program. If not, see http://www.gnu.org/licenses./
 */
 
+#include <mp-units/compat_macros.h>
+#include <mp-units/ext/format.h>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
+#include <iostream>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units;
+#else
 #include <mp-units/format.h>
 #include <mp-units/ostream.h>
-#include <mp-units/systems/iau/iau.h>
-#include <mp-units/systems/imperial/imperial.h>
-#include <mp-units/systems/international/international.h>
+#include <mp-units/systems/iau.h>
+#include <mp-units/systems/imperial.h>
+#include <mp-units/systems/international.h>  // IWYU pragma: keep
 #include <mp-units/systems/isq/space_and_time.h>
-#include <mp-units/systems/si/si.h>
-#include <mp-units/systems/typographic/typographic.h>
-#include <mp-units/systems/usc/usc.h>
-#include <iostream>
+#include <mp-units/systems/si.h>
+#include <mp-units/systems/typographic.h>
+#include <mp-units/systems/usc.h>
+#endif
 
 namespace {
 
@@ -113,7 +123,7 @@ void calcs_comparison()
   const auto L1A = 2.f * fm;
   const auto L2A = 3.f * fm;
   const auto LrA = L1A + L2A;
-  std::cout << MP_UNITS_STD_FMT::format("{:%.30Q %q}\n + {:%.30Q %q}\n   = {:%.30Q %q}\n\n", L1A, L2A, LrA);
+  std::cout << MP_UNITS_STD_FMT::format("{::N[.30]}\n + {::N[.30]}\n   = {::N[.30]}\n\n", L1A, L2A, LrA);
 
   std::cout << "The single unit method must convert large\n"
                "or small values in other units to the base unit.\n"
@@ -122,17 +132,17 @@ void calcs_comparison()
   const auto L1B = L1A.in(m);
   const auto L2B = L2A.in(m);
   const auto LrB = L1B + L2B;
-  std::cout << MP_UNITS_STD_FMT::format("{:%.30eQ %q}\n + {:%.30eQ %q}\n   = {:%.30eQ %q}\n\n", L1B, L2B, LrB);
+  std::cout << MP_UNITS_STD_FMT::format("{::N[.30e]}\n + {::N[.30e]}\n   = {::N[.30e]}\n\n", L1B, L2B, LrB);
 
   std::cout << "In multiplication and division:\n\n";
 
   const quantity<isq::area[square(fm)], float> ArA = L1A * L2A;
-  std::cout << MP_UNITS_STD_FMT::format("{:%.30Q %q}\n * {:%.30Q %q}\n   = {:%.30Q %q}\n\n", L1A, L2A, ArA);
+  std::cout << MP_UNITS_STD_FMT::format("{::N[.30]}\n * {::N[.30]}\n   = {::N[.30]}\n\n", L1A, L2A, ArA);
 
   std::cout << "similar problems arise\n\n";
 
   const quantity<isq::area[m2], float> ArB = L1B * L2B;
-  std::cout << MP_UNITS_STD_FMT::format("{:%.30eQ %q}\n * {:%.30eQ %q}\n   = {:%.30eQ %q}\n\n", L1B, L2B, ArB);
+  std::cout << MP_UNITS_STD_FMT::format("{::N[.30e]}\n * {::N[.30e]}\n   = {::N[.30e]}\n\n", L1B, L2B, ArB);
 }
 
 }  // namespace

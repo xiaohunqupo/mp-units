@@ -20,9 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-cmake_minimum_required(VERSION 3.2)
-
-add_subdirectory(unit_test/runtime)
-add_subdirectory(unit_test/static)
-
-# add_subdirectory(metabench)
+if(NOT ${projectPrefix}API_FREESTANDING)
+    add_subdirectory(runtime)
+endif()
+add_subdirectory(static)

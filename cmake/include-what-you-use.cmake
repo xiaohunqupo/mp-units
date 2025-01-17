@@ -20,13 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-cmake_minimum_required(VERSION 3.7)
-
-if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    # run IWYU only for clang compiler
-    # other compilers will generate i.e. unknown compilation flags warnings
-    return()
-endif()
+cmake_minimum_required(VERSION 3.15)
 
 set(IWYU_VERBOSITY_LEVEL 3 CACHE STRING "IWYU verbosity level (the higher the level, the more output)")
 
@@ -51,6 +45,7 @@ macro(_process_iwyu_arguments offset log_postfix)
     set(_options
         QUIET
         REQUIRED
+        ERROR
         NO_DEFAULT_MAPPINGS
         PCH_IN_CODE
         TRANSITIVE_INCLUDES_ONLY
@@ -86,10 +81,10 @@ macro(_process_iwyu_arguments offset log_postfix)
         set(_enable_iwyu_PROGRAM include-what-you-use)
     endif()
 
-    find_program(IWYU_PATH ${_enable_iwyu_PROGRAM})
-    if(IWYU_PATH)
+    find_program(_iwyu_path ${_enable_iwyu_PROGRAM})
+    if(_iwyu_path)
         if(NOT _enable_iwyu_QUIET)
-            message(STATUS "  Executable: ${IWYU_PATH}")
+            message(STATUS "  Executable: ${_iwyu_path}")
         endif()
     else()
         if(DEFINED _error_log_level)
@@ -118,6 +113,7 @@ macro(_process_iwyu_arguments offset log_postfix)
         _iwyu_args_append("--max_line_length=${_enable_iwyu_MAX_LINE_LENGTH}")
     endif()
 
+    _iwyu_args_append_if_present(ERROR "--error")
     _iwyu_args_append_if_present(NO_DEFAULT_MAPPINGS "--no_default_mappings")
     _iwyu_args_append_if_present(PCH_IN_CODE "--pch_in_code")
     _iwyu_args_append_if_present(TRANSITIVE_INCLUDES_ONLY "--transitive_includes_only")

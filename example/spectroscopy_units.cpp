@@ -20,11 +20,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <mp-units/format.h>
-#include <mp-units/systems/isq/isq.h>
-#include <mp-units/systems/si/si.h>
+#include <mp-units/compat_macros.h>
+#include <mp-units/ext/format.h>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
 #include <iostream>
 #include <tuple>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units;
+#else
+#include <mp-units/format.h>
+#include <mp-units/systems/isq.h>
+#include <mp-units/systems/si.h>
+#endif
 
 // This example implements a table of units provided in the following article
 // http://cds.cern.ch/record/1481609/files/978-3-642-18018-7_BookBackMatter.pdf
@@ -35,8 +45,6 @@ using namespace mp_units;
 using mp_units::si::unit_symbols::cm;
 using mp_units::si::unit_symbols::eV;
 using mp_units::si::unit_symbols::K;
-using mp_units::si::unit_symbols::kJ;
-using mp_units::si::unit_symbols::mol;
 using mp_units::si::unit_symbols::THz;
 using mp_units::si::unit_symbols::um;
 
@@ -50,8 +58,9 @@ template<QuantityOf<isq::energy> T1, QuantityOf<isq::wavenumber> T2, QuantityOf<
          QuantityOf<isq::thermodynamic_temperature> T4, QuantityOf<isq::wavelength> T5>
 void print_line(const std::tuple<T1, T2, T3, T4, T5>& t)
 {
-  MP_UNITS_STD_FMT::println("| {:<15} | {:<15} | {:<15} | {:<15} | {:<15} |", std::get<0>(t), std::get<1>(t),
-                            std::get<2>(t), std::get<3>(t), std::get<4>(t));
+  std::cout << MP_UNITS_STD_FMT::format(
+    "| {:<15:N[.6]} | {:<15:N[.6]} | {:<15:N[.6]} | {:<15:N[.6]} | {:<15:N[.6]} |\n", std::get<0>(t), std::get<1>(t),
+    std::get<2>(t), std::get<3>(t), std::get<4>(t));
 }
 
 // prints quantities in semi-SI units
@@ -60,9 +69,9 @@ template<QuantityOf<isq::energy> T1, QuantityOf<isq::wavenumber> T2, QuantityOf<
          QuantityOf<isq::thermodynamic_temperature> T4, QuantityOf<isq::wavelength> T5>
 void print_line_si(const std::tuple<T1, T2, T3, T4, T5>& t)
 {
-  MP_UNITS_STD_FMT::println("| {:<15} | {:<15} | {:<15} | {:<15} | {:<15} |", std::get<0>(t).in(eV),
-                            std::get<1>(t).in(one / cm), std::get<2>(t).in(THz), std::get<3>(t).in(K),
-                            std::get<4>(t).in(um));
+  std::cout << MP_UNITS_STD_FMT::format(
+    "| {:<15:N[.6]} | {:<15:N[.6]} | {:<15:N[.6]} | {:<15:N[.6]} | {:<15:N[.6]} |\n", std::get<0>(t).in(eV),
+    std::get<1>(t).in(one / cm), std::get<2>(t).in(THz), std::get<3>(t).in(K), std::get<4>(t).in(um));
 }
 
 int main()
@@ -79,7 +88,7 @@ int main()
   const auto t3 = std::make_tuple(isq::energy(q3 * h), isq::wavenumber(q3 / c), q3,
                                   isq::thermodynamic_temperature(q3 * h / kb), isq::wavelength(c / q3));
 
-  const auto q4 = isq::thermodynamic_temperature(1. * K);
+  const auto q4 = delta<isq::thermodynamic_temperature[K]>(1.);
   const auto t4 = std::make_tuple(isq::energy(q4 * kb), isq::wavenumber(q4 * kb / (h * c)), isq::frequency(q4 * kb / h),
                                   q4, isq::wavelength(h * c / (q4 * kb)));
 
@@ -87,16 +96,16 @@ int main()
   const auto t5 = std::make_tuple(isq::energy(h * c / q5), isq::wavenumber(1 / q5), isq::frequency(c / q5),
                                   isq::thermodynamic_temperature(h * c / (q5 * kb)), q5);
 
-  MP_UNITS_STD_FMT::println("| {:<15} | {:<15} | {:<15} | {:<15} | {:<15} |", "Energy", "Wavenumber", "Frequency",
-                            "Temperature", "Wavelength");
-  MP_UNITS_STD_FMT::println("| {0:-^15} | {0:-^15} | {0:-^15} | {0:-^15} | {0:-^15} |", "");
+  std::cout << MP_UNITS_STD_FMT::format("| {:<15} | {:<15} | {:<15} | {:<15} | {:<15} |\n", "Energy", "Wavenumber",
+                                        "Frequency", "Temperature", "Wavelength");
+  std::cout << MP_UNITS_STD_FMT::format("| {0:-^15} | {0:-^15} | {0:-^15} | {0:-^15} | {0:-^15} |\n", "");
   print_line(t1);
   print_line(t2);
   print_line(t3);
   print_line(t4);
   print_line(t5);
 
-  MP_UNITS_STD_FMT::println("| {0:-^15} | {0:-^15} | {0:-^15} | {0:-^15} | {0:-^15} |", "");
+  std::cout << MP_UNITS_STD_FMT::format("| {0:-^15} | {0:-^15} | {0:-^15} | {0:-^15} | {0:-^15} |\n", "");
   print_line_si(t1);
   print_line_si(t2);
   print_line_si(t3);

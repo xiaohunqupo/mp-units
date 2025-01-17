@@ -20,36 +20,111 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-cmake_minimum_required(VERSION 3.19)
-project(mp-units VERSION 2.1.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.25)
+project(mp-units VERSION 2.5.0 LANGUAGES CXX)
 
 set(projectPrefix MP_UNITS_)
 
-option(${projectPrefix}AS_SYSTEM_HEADERS "Exports library as system headers" OFF)
-message(STATUS "${projectPrefix}AS_SYSTEM_HEADERS: ${${projectPrefix}AS_SYSTEM_HEADERS}")
-
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
-include(AddUnitsModule)
+include(AddMPUnitsModule)
+include(CheckCacheVarValues)
+include(CheckCXXFeatureSupported)
 include(GNUInstallDirs)
 
-if(${projectPrefix}AS_SYSTEM_HEADERS)
-    set(unitsAsSystem SYSTEM)
+# check if libc++ is being used
+include(CheckLibcxxInUse)
+check_libcxx_in_use(${projectPrefix}LIBCXX)
+
+# project build options
+option(${projectPrefix}BUILD_AS_SYSTEM_HEADERS "Export library as system headers" OFF)
+option(${projectPrefix}BUILD_CXX_MODULES "Add C++ modules to the list of default targets" OFF)
+
+message(STATUS "${projectPrefix}BUILD_AS_SYSTEM_HEADERS: ${${projectPrefix}BUILD_AS_SYSTEM_HEADERS}")
+message(STATUS "${projectPrefix}BUILD_CXX_MODULES: ${${projectPrefix}BUILD_CXX_MODULES}")
+
+if(${projectPrefix}BUILD_AS_SYSTEM_HEADERS)
+    set(${projectPrefix}_AS_SYSTEM SYSTEM)
 endif()
 
+# check for C++ features
+check_cxx_feature_supported(__cpp_lib_format ${projectPrefix}LIB_FORMAT_SUPPORTED)
+check_cxx_feature_supported(__cpp_explicit_this_parameter ${projectPrefix}EXPLICIT_THIS_PARAMETER_SUPPORTED)
+
+# libc++ has a basic supports for std::format but does not set __cpp_lib_format
+# https://github.com/llvm/llvm-project/issues/77773
+if(NOT ${projectPrefix}LIB_FORMAT_SUPPORTED AND ${projectPrefix}LIBCXX)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "17")
+        message(STATUS "Clang 17+ with libc++ detected, overriding `std::format` support")
+        set(${projectPrefix}LIB_FORMAT_SUPPORTED ON)
+    endif()
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "16")
+        message(STATUS "AppleClang 16+ with libc++ detected, overriding `std::format` support")
+        set(${projectPrefix}LIB_FORMAT_SUPPORTED ON)
+    endif()
+endif()
+
+# clang++-18 supports explicit `this` parameter
+# https://github.com/llvm/llvm-project/issues/82780
+if(NOT ${projectPrefix}EXPLICIT_THIS_PARAMETER_SUPPORTED AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+   AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "18"
+)
+    message(STATUS "Clang 18+ detected, overriding `no CRTP` support")
+    set(${projectPrefix}EXPLICIT_THIS_PARAMETER_SUPPORTED ON)
+endif()
+
+# project API settings
+option(${projectPrefix}API_STD_FORMAT "Enable `std::format` support" ${${projectPrefix}LIB_FORMAT_SUPPORTED})
+option(${projectPrefix}API_NO_CRTP "Enable class definitions without CRTP idiom"
+       ${${projectPrefix}EXPLICIT_THIS_PARAMETER_SUPPORTED}
+)
+option(${projectPrefix}API_FREESTANDING "Builds only freestanding part of the library" OFF)
+set(${projectPrefix}API_CONTRACTS GSL-LITE CACHE STRING "Enable contract checking")
+check_cache_var_values(API_CONTRACTS NONE GSL-LITE MS-GSL)
+
+message(STATUS "${projectPrefix}API_STD_FORMAT: ${${projectPrefix}API_STD_FORMAT}")
+message(STATUS "${projectPrefix}API_NO_CRTP: ${${projectPrefix}API_NO_CRTP}")
+message(STATUS "${projectPrefix}API_FREESTANDING: ${${projectPrefix}API_FREESTANDING}")
+message(STATUS "${projectPrefix}API_CONTRACTS: ${${projectPrefix}API_CONTRACTS}")
+
+# validate options
+if(${projectPrefix}API_FREESTANDING AND NOT ${projectPrefix}API_CONTRACTS STREQUAL "NONE")
+    message(FATAL_ERROR "'${projectPrefix}API_CONTRACTS' should be set to 'NONE' for a freestanding build")
+endif()
+
+if(NOT ${projectPrefix}API_FREESTANDING AND ${projectPrefix}API_STD_FORMAT AND NOT ${projectPrefix}LIB_FORMAT_SUPPORTED)
+    message(FATAL_ERROR "`std::format` enabled but not supported")
+endif()
+
+if(${projectPrefix}API_NO_CRTP AND NOT ${projectPrefix}EXPLICIT_THIS_PARAMETER_SUPPORTED)
+    message(FATAL_ERROR "`NO_CRTP` mode enabled but explicit `this` parameter is not supported")
+endif()
+
+if(${projectPrefix}BUILD_CXX_MODULES)
+    if(CMAKE_VERSION VERSION_LESS "3.29")
+        message(FATAL_ERROR "CMake versions before 3.29 do not support C++ modules properly")
+    endif()
+    set(${projectPrefix}TARGET_SCOPE "PUBLIC")
+else()
+    set(${projectPrefix}TARGET_SCOPE "INTERFACE")
+endif()
+
+if(CMAKE_CXX_MODULE_STD)
+    if(CMAKE_VERSION VERSION_LESS "3.30")
+        message(FATAL_ERROR "CMake versions before 3.30 do not support `import std;` properly")
+    endif()
+    if(CMAKE_CXX_STANDARD LESS 23)
+        message(FATAL_ERROR "`import std;` requires at least C++23")
+    endif()
+endif()
+
+# components/modules
+include(MPUnitsContracts)
 add_subdirectory(core)
-add_subdirectory(core-fmt)
-add_subdirectory(core-io)
 add_subdirectory(systems)
-add_subdirectory(utility)
 
 # project-wide wrapper
-add_library(mp-units INTERFACE)
-target_link_libraries(
-    mp-units INTERFACE mp-units::core mp-units::core-io mp-units::core-fmt mp-units::systems mp-units::utility
-)
-add_library(mp-units::mp-units ALIAS mp-units)
-install(TARGETS mp-units EXPORT mp-unitsTargets)
+add_mp_units_module(mp-units mp-units DEPENDENCIES mp-units::core mp-units::systems MODULE_INTERFACE_UNIT mp-units.cpp)
 
 # local build
 export(EXPORT mp-unitsTargets NAMESPACE mp-units::)

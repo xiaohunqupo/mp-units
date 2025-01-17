@@ -1,8 +1,8 @@
 # Faster-than-lightspeed Constants
 
 In most libraries, physical constants are implemented as constant (possibly `constexpr`)
-quantity values. Such an approach has some disadvantages, often resulting in longer
-compilation times and a loss of precision.
+quantity values. Such an approach has some disadvantages, often affecting the run time
+performance and causing a loss of precision.
 
 
 ## Simplifying constants in an equation
@@ -16,7 +16,7 @@ performance and often a better precision of the resulting value.
 
 ## Physical constants as units
 
-The **mp-units** library allows and encourages implementing physical constants as
+The **mp-units** library allows and encourages the implementation of physical constants as
 regular units. With that, the constant's value is handled at compile-time, and under
 favorable circumstances, it can be simplified in the same way as all other repeated
 units do. If it is not simplified, the value is stored in a type, and the expensive
@@ -39,13 +39,13 @@ namespace si {
 
 namespace si2019 {
 
-inline constexpr struct speed_of_light_in_vacuum :
+inline constexpr struct speed_of_light_in_vacuum final :
   named_unit<"c", mag<299'792'458> * metre / second> {} speed_of_light_in_vacuum;
 
 }  // namespace si2019
 
-inline constexpr struct magnetic_constant :
-  named_unit<basic_symbol_text{"μ₀", "u_0"}, mag<4> * mag_pi * mag_power<10, -7> * henry / metre> {} magnetic_constant;
+inline constexpr struct magnetic_constant final :
+  named_unit<{u8"μ₀", "u_0"}, mag<4> * mag<π> * mag_power<10, -7> * henry / metre> {} magnetic_constant;
 
 }  // namespace mp_units::si
 ```
@@ -53,7 +53,7 @@ inline constexpr struct magnetic_constant :
 
 ## Usage examples
 
-With the above definitions, we can calculate vacuum permittivity as:
+With the above definitions, we can calculate _vacuum permittivity_ as:
 
 ```cpp
 constexpr auto permeability_of_vacuum = 1. * si::magnetic_constant;
@@ -61,20 +61,20 @@ constexpr auto speed_of_light_in_vacuum = 1 * si::si2019::speed_of_light_in_vacu
 
 QuantityOf<isq::permittivity_of_vacuum> auto q = 1 / (permeability_of_vacuum * pow<2>(speed_of_light_in_vacuum));
 
-std::cout << "permittivity of vacuum = " << q << " = " << q.in(F / m) << "\n";
+std::println("permittivity of vacuum = {} = {::N[.3e]}", q, q.in(F / m));
 ```
 
 The above first prints the following:
 
 ```text
-permittivity of vacuum = 1  μ₀⁻¹ c⁻² = 8.85419e-12 F/m
+permittivity of vacuum = 1  μ₀⁻¹ c⁻² = 8.854e-12 F/m
 ```
 
 As we can clearly see, all the calculations above were just about multiplying and dividing
 the number `1` with the rest of the information provided as a compile-time type. Only when
-a user wants a specific SI unit as a result the unit ratios are lazily resolved.
+a user wants a specific SI unit as a result, the unit ratios are lazily resolved.
 
-Another similar example can be an equation for total energy:
+Another similar example can be an equation for _total energy_:
 
 ```cpp
 QuantityOf<isq::mechanical_energy> auto total_energy(QuantityOf<isq::momentum> auto p,

@@ -20,13 +20,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <mp-units/ostream.h>
-#include <mp-units/systems/isq/space_and_time.h>
-#include <mp-units/systems/si/unit_symbols.h>
-#include <mp-units/systems/si/units.h>
+#include <mp-units/bits/hacks.h>
+#include <mp-units/compat_macros.h>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
 #include <cmath>
+#include <compare>  // IWYU pragma: export
 #include <exception>
 #include <iostream>
+#include <utility>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units;
+#else
+#include <mp-units/framework.h>
+#include <mp-units/ostream.h>
+#include <mp-units/systems/isq/space_and_time.h>
+#include <mp-units/systems/si.h>
+#endif
 
 namespace {
 
@@ -37,11 +49,13 @@ public:
 
   measurement() = default;
 
-  constexpr explicit measurement(value_type val, const value_type& err = {}) : value_(std::move(val))
+  // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+  constexpr explicit measurement(value_type val, const value_type& err = {}) :
+      value_(std::move(val)), uncertainty_([&] {
+        using namespace std;
+        return abs(err);
+      }())
   {
-    // it sucks that using declaration cannot be provided for a constructor initializer list
-    using namespace std;
-    uncertainty_ = abs(err);
   }
 
   [[nodiscard]] constexpr const value_type& value() const { return value_; }
@@ -110,6 +124,13 @@ public:
     return os << v.value() << " ± " << v.uncertainty();
   }
 
+  [[nodiscard]] friend constexpr measurement abs(const measurement& v)
+    requires requires { abs(v.value()); } || requires { std::abs(v.value()); }
+  {
+    using std::abs;
+    return measurement(abs(v.value()), v.uncertainty());
+  }
+
 private:
   value_type value_{};
   value_type uncertainty_{};
@@ -117,15 +138,8 @@ private:
 
 }  // namespace
 
-template<class T>
-inline constexpr bool mp_units::treat_as_floating_point<measurement<T>> = mp_units::treat_as_floating_point<T>;
-
-template<class T>
-inline constexpr bool mp_units::is_scalar<measurement<T>> = true;
-template<class T>
-inline constexpr bool mp_units::is_vector<measurement<T>> = true;
-
 static_assert(mp_units::RepresentationOf<measurement<double>, mp_units::quantity_character::scalar>);
+static_assert(mp_units::RepresentationOf<measurement<double>, mp_units::quantity_character::vector>);
 
 namespace {
 

@@ -20,14 +20,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <mp-units/compat_macros.h>
+#include <mp-units/ext/format.h>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
+#include <iostream>
+#include <string>
+#include <string_view>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units;
+#else
 #include <mp-units/format.h>
-#include <mp-units/systems/imperial/imperial.h>
-#include <mp-units/systems/international/international.h>
+#include <mp-units/systems/imperial.h>
+#include <mp-units/systems/international.h>  // IWYU pragma: keep
 #include <mp-units/systems/isq/mechanics.h>
 #include <mp-units/systems/isq/space_and_time.h>
-#include <mp-units/systems/si/unit_symbols.h>
-#include <iostream>
-#include <string_view>
+#include <mp-units/systems/si.h>
+#endif
 
 using namespace mp_units;
 using namespace mp_units::international::unit_symbols;
@@ -53,7 +64,8 @@ struct Ship {
 template<Unit auto... Us, Quantity Q>
 auto fmt_line(const Q& q)
 {
-  return MP_UNITS_STD_FMT::format("{:22}", q) + (MP_UNITS_STD_FMT::format(",{:20}", value_cast<Us>(q)) + ...);
+  return MP_UNITS_STD_FMT::format("{:22:N[.2f]}", q) +
+         (MP_UNITS_STD_FMT::format(",{:20:N[.2f]}", value_cast<Us>(q)) + ...);
 }
 
 // Print the ship details in the units as defined in the Ship struct, in other si::imperial units, and in SI

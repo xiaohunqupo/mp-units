@@ -33,10 +33,10 @@ Box my_box(2 * m, 3 * m, 1 * m);
 How do you like such an interface? It turns out that in most existing strongly-typed libraries
 this is often the best we can do :woozy_face:
 
-Another typical question many users ask is how to deal with energy and moment of force.
+Another typical question many users ask is how to deal with _work_ and _torque_.
 Both of those have the same dimension but are different quantities.
 
-Another question is what should be the result of:
+A similar issue is related to figuring out what should be the result of:
 
 ```cpp
 auto res = 1 * Hz + 1 * Bq + 1 * Bd;
@@ -44,20 +44,27 @@ auto res = 1 * Hz + 1 * Bq + 1 * Bd;
 
 where:
 
-- `Hz` (hertz) - unit of frequency
-- `Bq` (becquerel) - unit of activity
-- `Bd` (baud) - unit of modulation rate
+- `Hz` (hertz) - unit of _frequency_
+- `Bq` (becquerel) - unit of _activity_
+- `Bd` (baud) - unit of _modulation rate_
 
 All of those quantities have the same dimension, namely $\mathsf{T}^{-1}$, but probably it
 is not wise to allow adding, subtracting, or comparing them, as they describe vastly different
 physical properties.
 
+If the above example seems too abstract, let's consider a _fuel consumption_ (fuel _volume_
+divided by _distance_, e.g., `6.7 l/km`) and an _area_. Again, both have the same dimension
+$\mathsf{L}^{2}$, but probably it wouldn't be wise to allow adding, subtracting, or comparing
+a _fuel consumption_ of a car and the _area_ of a football field. Such an operation does not
+have any physical sense and should fail to compile.
+
 !!! important
 
     More than one quantity may be defined for the same dimension:
 
-    - quantities of _different kinds_ (e.g. frequency, modulation rate, activity, ...)
-    - quantities of _the same kind_ (e.g. length, width, altitude, distance, radius, wavelength, position vector, ...)
+    - quantities of **different kinds** (e.g. _frequency_, _modulation rate_, _activity_, ...)
+    - quantities of **the same kind** (e.g. _length_, _width_, _altitude_, _distance_, _radius_,
+      _wavelength_, _position vector_, ...)
 
 It turns out that the above issues can't be solved correctly without proper modeling of
 a [system of quantities](../../appendix/glossary.md#system-of-quantities).
@@ -76,10 +83,10 @@ a [system of quantities](../../appendix/glossary.md#system-of-quantities).
       dimension**
     - Quantities of the **same dimension are not necessarily of the same kind**
 
-The above quotes from ISO 80000 answer to all the issues above. Two quantities can't be
+The above quotes from ISO 80000 provide answers to all the issues above. Two quantities can't be
 added, subtracted, or compared unless they belong to the same [kind](../../appendix/glossary.md#kind).
-As frequency, activity, and modulation rate are different kinds, the expression provided above should
-not compile.
+As _frequency_, _activity_, and _modulation rate_ are of different kinds, the expression provided
+above should not compile.
 
 
 ## System of quantities is not only about kinds
@@ -92,25 +99,27 @@ For example, here are all quantities of the kind length provided in the ISO 8000
 
 ```mermaid
 flowchart TD
-    length --- width[width, breadth]
-    length --- height[height, depth, altitude]
-    width --- thickness
-    width --- diameter
-    width --- radius
-    length --- path_length
-    path_length --- distance
-    distance --- radial_distance
-    length --- wavelength
-    length --- position_vector["position_vector\n{vector}"]
-    length --- displacement["displacement\n{vector}"]
-    radius --- radius_of_curvature
+    length["<b>length</b><br>[m]"]
+    length --- width["<b>width</b> / <b>breadth</b>"]
+    length --- height["<b>height</b> / <b>depth</b> / <b>altitude</b>"]
+    width --- thickness["<b>thickness</b>"]
+    width --- diameter["<b>diameter</b>"]
+    width --- radius["<b>radius</b>"]
+    length --- path_length["<b>path_length</b>"]
+    path_length --- distance["<b>distance</b>"]
+    distance --- radial_distance["<b>radial_distance</b>"]
+    length --- wavelength["<b>wavelength</b>"]
+    length --- displacement["<b>displacement</b><br>{vector}"]
+    displacement --- position_vector["<b>position_vector</b>"]
+    radius --- radius_of_curvature["<b>radius_of_curvature</b>"]
 ```
 
-Each of the above quantities expresses some kind of length, and each can be measured with `si::metre`.
-However, each of them has different properties, usage, and sometimes even a different
+Each of the above quantities expresses some kind of _length_, and each can be measured with `si::metre`.
+However, each of them has different properties, usage, and sometimes even requires a different
 representation type (notice that `position_vector` and `displacement` are vector quantities).
 
-Analyzing such a hierarchy can help us in defining arithmetics and conversion rules.
+Forming such a hierarchy helps us in defining arithmetics and conversion rules for various
+quantities of the same kind.
 
 
 ## Defining quantities
@@ -124,56 +133,61 @@ from such an instantiation.
     Quantity specification definitions benefit from an
     [explicit object parameter](https://en.cppreference.com/w/cpp/language/member_functions#Explicit_object_parameter)
     added in C++23 to remove the need for CRTP idiom, which significantly simplifies the code.
-    However, as C++23 is far from being mainstream today, a portability macro `QUANTITY_SPEC()`
+    However, as C++23 is far from being mainstream today,
+    a [portability macro `QUANTITY_SPEC()`](../use_cases/wide_compatibility.md#QUANTITY_SPEC)
     is provided and used consistently through the library to allow the code to compile with C++20
     compilers, thanks to the CRTP usage under the hood.
 
-    *[CRTP]: Curiously Recurring Template Pattern
+    See more in the
+    [C++ compiler support](../../getting_started/cpp_compiler_support.md#explicit-this-parameter)
+    chapter.
+
+    *[CRTP]: Curiously Recurring Template Parameter
 
 For example, here is how the above quantity kind tree can be modeled in the library:
 
 === "C++23"
 
     ```cpp
-    inline constexpr struct length : quantity_spec<dim_length> {} length;
-    inline constexpr struct width : quantity_spec<length> {} width;
+    inline constexpr struct length final : quantity_spec<dim_length> {} length;
+    inline constexpr struct width final : quantity_spec<length> {} width;
     inline constexpr auto breadth = width;
-    inline constexpr struct height : quantity_spec<length> {} height;
+    inline constexpr struct height final : quantity_spec<length> {} height;
     inline constexpr auto depth = height;
     inline constexpr auto altitude = height;
-    inline constexpr struct thickness : quantity_spec<width> {} thickness;
-    inline constexpr struct diameter : quantity_spec<width> {} diameter;
-    inline constexpr struct radius : quantity_spec<width> {} radius;
-    inline constexpr struct radius_of_curvature : quantity_spec<radius> {} radius_of_curvature;
-    inline constexpr struct path_length : quantity_spec<length> {} path_length;
+    inline constexpr struct thickness final : quantity_spec<width> {} thickness;
+    inline constexpr struct diameter final : quantity_spec<width> {} diameter;
+    inline constexpr struct radius final : quantity_spec<width> {} radius;
+    inline constexpr struct radius_of_curvature final : quantity_spec<radius> {} radius_of_curvature;
+    inline constexpr struct path_length final : quantity_spec<length> {} path_length;
     inline constexpr auto arc_length = path_length;
-    inline constexpr struct distance : quantity_spec<path_length> {} distance;
-    inline constexpr struct radial_distance : quantity_spec<distance> {} radial_distance;
-    inline constexpr struct wavelength : quantity_spec<length> {} wavelength;
-    inline constexpr struct position_vector : quantity_spec<length, quantity_character::vector> {} position_vector;
-    inline constexpr struct displacement : quantity_spec<length, quantity_character::vector> {} displacement;
+    inline constexpr struct distance final : quantity_spec<path_length> {} distance;
+    inline constexpr struct radial_distance final : quantity_spec<distance> {} radial_distance;
+    inline constexpr struct wavelength final : quantity_spec<length> {} wavelength;
+    inline constexpr struct displacement final : quantity_spec<length, quantity_character::vector> {} displacement;
+    inline constexpr struct position_vector final : quantity_spec<displacement> {} position_vector;
     ```
 
 === "C++20"
 
     ```cpp
-    inline constexpr struct length : quantity_spec<length, dim_length> {} length;
-    inline constexpr struct width : quantity_spec<width, length> {} width;
+    inline constexpr struct length final : quantity_spec<length, dim_length> {} length;
+    inline constexpr struct width final : quantity_spec<width, length> {} width;
     inline constexpr auto breadth = width;
-    inline constexpr struct height : quantity_spec<height, length> {} height;
+    inline constexpr struct height final : quantity_spec<height, length> {} height;
     inline constexpr auto depth = height;
     inline constexpr auto altitude = height;
-    inline constexpr struct thickness : quantity_spec<thickness, width> {} thickness;
-    inline constexpr struct diameter : quantity_spec<diameter, width> {} diameter;
-    inline constexpr struct radius : quantity_spec<radius, width> {} radius;
-    inline constexpr struct radius_of_curvature : quantity_spec<radius_of_curvature, radius> {} radius_of_curvature;
-    inline constexpr struct path_length : quantity_spec<path_length, length> {} path_length;
+    inline constexpr struct thickness final : quantity_spec<thickness, width> {} thickness;
+    inline constexpr struct diameter final : quantity_spec<diameter, width> {} diameter;
+    inline constexpr struct radius final : quantity_spec<radius, width> {} radius;
+    inline constexpr struct radius_of_curvature final : quantity_spec<radius_of_curvature, radius> {} radius_of_curvature;
+    inline constexpr struct path_length final : quantity_spec<path_length, length> {} path_length;
     inline constexpr auto arc_length = path_length;
-    inline constexpr struct distance : quantity_spec<distance, path_length> {} distance;
-    inline constexpr struct radial_distance : quantity_spec<radial_distance, distance> {} radial_distance;
-    inline constexpr struct wavelength : quantity_spec<wavelength, length> {} wavelength;
-    inline constexpr struct position_vector : quantity_spec<position_vector, length, quantity_character::vector> {} position_vector;
-    inline constexpr struct displacement : quantity_spec<displacement, length, quantity_character::vector> {} displacement;
+    inline constexpr struct distance final : quantity_spec<distance, path_length> {} distance;
+    inline constexpr struct radial_distance final : quantity_spec<radial_distance, distance> {} radial_distance;
+    inline constexpr struct wavelength final : quantity_spec<wavelength, length> {} wavelength;
+    inline constexpr struct displacement final : quantity_spec<displacement, length, quantity_character::vector> {} displacement;
+    inline constexpr struct position_vector final : quantity_spec<position_vector, displacement> {} position_vector;
     ```
 
 === "Portable"
@@ -194,31 +208,31 @@ For example, here is how the above quantity kind tree can be modeled in the libr
     QUANTITY_SPEC(distance, path_length);
     QUANTITY_SPEC(radial_distance, distance);
     QUANTITY_SPEC(wavelength, length);
-    QUANTITY_SPEC(position_vector, length, quantity_character::vector);
     QUANTITY_SPEC(displacement, length, quantity_character::vector);
+    QUANTITY_SPEC(position_vector, displacement);
     ```
 
 !!! note
 
     More information on how to define a system of quantities can be found in the
-    ["International System of Quantities (ISQ)"](../defining_systems/isq.md) chapter.
+    ["International System of Quantities (ISQ)"](../systems/isq.md) chapter.
 
 
 ## Comparing, adding, and subtracting quantities
 
-ISO 80000 explicitly states that `width` and `height` are quantities of the same kind, and as such they:
+ISO 80000 explicitly states that _width_ and _height_ are quantities of the same kind, and as such they:
 
-- are mutually comparable
-- can be added and subtracted
+- are mutually comparable,
+- can be added and subtracted.
 
 If we take the above for granted, the only reasonable result of `1 * width + 1 * height` is `2 * length`,
-where the result of `length` is known as a common quantity type. A result of such an equation is always
-the first common branch in a hierarchy tree of the same kind. For example:
+where the result of `length` is known as a **common quantity** type. A result of such an equation is always
+the first common node in a hierarchy tree of the same kind. For example:
 
 ```cpp
-static_assert(common_quantity_spec(isq::width, isq::height) == isq::length);
-static_assert(common_quantity_spec(isq::thickness, isq::radius) == isq::width);
-static_assert(common_quantity_spec(isq::distance, isq::path_length) == isq::path_length);
+static_assert(get_common_quantity_spec(isq::width, isq::height) == isq::length);
+static_assert(get_common_quantity_spec(isq::thickness, isq::radius) == isq::width);
+static_assert(get_common_quantity_spec(isq::distance, isq::path_length) == isq::path_length);
 ```
 
 
@@ -228,33 +242,33 @@ Based on the same hierarchy of quantities of kind length, we can define quantity
 
 1. **Implicit conversions**
 
-    - every `width` is a `length`
-    - every `radius` is a `width`
+    - every _width_ is a _length_
+    - every _radius_ is a _width_
 
     ```cpp
     static_assert(implicitly_convertible(isq::width, isq::length));
-    static_assert(implicitly_convertible(isq::radius, isq::length));
     static_assert(implicitly_convertible(isq::radius, isq::width));
+    static_assert(implicitly_convertible(isq::radius, isq::length));
     ```
 
 2. **Explicit conversions**
 
-    - not every `length` is a `width`
-    - not every `width` is a `radius`
+    - not every _length_ is a _width_
+    - not every _width_ is a _radius_
 
     ```cpp
     static_assert(!implicitly_convertible(isq::length, isq::width));
-    static_assert(!implicitly_convertible(isq::length, isq::radius));
     static_assert(!implicitly_convertible(isq::width, isq::radius));
+    static_assert(!implicitly_convertible(isq::length, isq::radius));
     static_assert(explicitly_convertible(isq::length, isq::width));
-    static_assert(explicitly_convertible(isq::length, isq::radius));
     static_assert(explicitly_convertible(isq::width, isq::radius));
+    static_assert(explicitly_convertible(isq::length, isq::radius));
     ```
 
 3. **Explicit casts**
 
-    - `height` is not a `width`
-    - both `height` and `width` are quantities of kind `length`
+    - _height_ is not a _width_
+    - both _height_ and _width_ are quantities of kind _length_
 
     ```cpp
     static_assert(!implicitly_convertible(isq::height, isq::width));
@@ -264,7 +278,7 @@ Based on the same hierarchy of quantities of kind length, we can define quantity
 
 4. **No conversion**
 
-    - `time` has nothing in common with `length`
+    - _time_ has nothing in common with _length_
 
     ```cpp
     static_assert(!implicitly_convertible(isq::time, isq::length));
@@ -282,40 +296,40 @@ sometimes not obvious what such a tree should look like. Also, ISO explicitly st
 
     The division of ‘quantity’ according to ‘kind of quantity’ is, to some extent, arbitrary.
 
-The below presents some arbitrary hierarchy of derived quantities of kind energy:
+The below presents some arbitrary hierarchy of derived quantities of kind _energy_:
 
 ```mermaid
 flowchart TD
-    energy["energy\n(mass * length^2 / time^2)"]
-    energy --- mechanical_energy
-    mechanical_energy --- potential_energy
-    potential_energy --- gravitational_potential_energy["gravitational_potential_energy\n(mass * acceleration_of_free_fall * height)"]
-    potential_energy --- elastic_potential_energy["elastic_potential_energy\n(spring_constant * amount_of_compression^2)"]
-    mechanical_energy --- kinetic_energy["kinetic_energy\n(mass * speed^2)"]
-    energy --- enthalpy
-    enthalpy --- internal_energy[internal_energy, thermodynamic_energy]
-    internal_energy --- Helmholtz_energy[Helmholtz_energy, Helmholtz_function]
-    enthalpy --- Gibbs_energy[Gibbs_energy, Gibbs_function]
-    energy --- active_energy
+    energy["<b>energy</b><br><i>(mass * length<sup>2</sup> / time<sup>2</sup>)</i><br>[J]"]
+    energy --- mechanical_energy["<b>mechanical_energy</b>"]
+    mechanical_energy --- potential_energy["<b>potential_energy</b>"]
+    potential_energy --- gravitational_potential_energy["<b>gravitational_potential_energy</b><br><i>(mass * acceleration_of_free_fall * height)</i>"]
+    potential_energy --- elastic_potential_energy["<b>elastic_potential_energy</b><br><i>(spring_constant * amount_of_compression<sup>2</sup>)</i>"]
+    mechanical_energy --- kinetic_energy["<b>kinetic_energy</b><br><i>(mass * speed<sup>2</sup>)</i>"]
+    energy --- enthalpy["<b>enthalpy</b>"]
+    enthalpy --- internal_energy["<b>internal_energy</b> / <b>thermodynamic_energy</b>"]
+    internal_energy --- Helmholtz_energy["<b>Helmholtz_energy</b> / <b>Helmholtz_function</b>"]
+    enthalpy --- Gibbs_energy["<b>Gibbs_energy</b> / <b>Gibbs_function</b>"]
+    energy --- active_energy["<b>active_energy</b>"]
 ```
 
 Notice, that even though all of those quantities have the same dimension and can be expressed
 in the same units, they have different [quantity equations](../../appendix/glossary.md#quantity-equation)
-used to create them implicitly:
+that can be used to create them implicitly:
 
-- `energy` is the most generic one and thus can be created from base quantities of `mass`, `length`,
-  and `time`. As those are also the roots of quantities of their kinds and all other quantities are
-  implicitly convertible to them (we agreed on that "every `width` is a `length`" already), it means
-  that an `energy` can be implicitly constructed from any quantity of mass, length, and time.
+- _energy_ is the most generic one and thus can be created from base quantities of _mass_, _length_,
+  and _time_. As those are also the roots of quantities of their kinds and all other quantities from their
+  trees are implicitly convertible to them (we agreed on that "every _width_ is a _length_" already),
+  it means that an _energy_ can be implicitly constructed from any quantity of _mass_, _length_, and _time_:
 
     ```cpp
     static_assert(implicitly_convertible(isq::mass * pow<2>(isq::length) / pow<2>(isq::time), isq::energy));
     static_assert(implicitly_convertible(isq::mass * pow<2>(isq::height) / pow<2>(isq::time), isq::energy));
     ```
 
-- `mechanical_energy` is a more "specialized" quantity than `energy` (not every `energy` is
-  a `mechanical_energy`). It is why an explicit cast is needed to convert from either `energy` or
-  the results of its [quantity equation](../../appendix/glossary.md#quantity-equation).
+- _mechanical energy_ is a more "specialized" quantity than _energy_ (not every _energy_ is
+  a _mechanical energy_). It is why an explicit cast is needed to convert from either _energy_ or
+  the results of its [quantity equation](../../appendix/glossary.md#quantity-equation):
 
     ```cpp
     static_assert(!implicitly_convertible(isq::energy, isq::mechanical_energy));
@@ -326,10 +340,10 @@ used to create them implicitly:
                                          isq::mechanical_energy));
     ```
 
-- `gravitational_potential_energy` is not only even more specialized one but additionally,
+- _gravitational potential energy_ is not only even more specialized one but additionally,
   it is special in a way that it provides its own "constrained"
   [quantity equation](../../appendix/glossary.md#quantity-equation). Maybe not every
-  `mass * pow<2>(length) / pow<2>(time)` is a `gravitational_potential_energy`, but every
+  `mass * pow<2>(length) / pow<2>(time)` is a _gravitational potential energy_, but every
   `mass * acceleration_of_free_fall * height` is.
 
     ```cpp
@@ -351,7 +365,7 @@ quantities of the same kind. Such quantities have not only the same dimension bu
 can be expressed in the same units.
 
 To annotate a quantity to represent its kind (and not just a hierarchy tree's root quantity)
-we introduced a `kind_of<>` specifier. For example, to express any quantity of length, we need
+we introduced a `kind_of<>` specifier. For example, to express any quantity of _length_, we need
 to type `kind_of<isq::length>`.
 
 !!! important
@@ -372,7 +386,7 @@ Additionally, the result of operations on quantity kinds is also a quantity kind
 static_assert(same_type<kind_of<isq::length> / kind_of<isq::time>, kind_of<isq::length / isq::time>>);
 ```
 
-However, if at least one equation's operand is not a kind, the result becomes a "strong"
+However, if at least one equation's operand is not a quantity kind, the result becomes a "strong"
 quantity where all the kinds are converted to the hierarchy tree's root quantities:
 
 ```cpp
@@ -384,4 +398,9 @@ static_assert(same_type<kind_of<isq::length> / isq::time, isq::length / isq::tim
 
     Only a root quantity from the hierarchy tree or the one marked with `is_kind` specifier
     in the `quantity_spec` definition can be put as a template parameter to the `kind_of`
-    specifier. For example, `kind_of<isq::width>` will fail to compile.
+    specifier. For example, `kind_of<isq::width>` will fail to compile. However, we can call
+    `get_kind(q)` to obtain a kind of any quantity:
+
+    ```cpp
+    static_assert(get_kind(isq::width) == kind_of<isq::length>);
+    ```

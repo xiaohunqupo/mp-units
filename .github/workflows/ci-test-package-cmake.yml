@@ -24,110 +24,46 @@ name: CMake Test Package CI
 
 on:
   push:
+    branches:
+      - '**'
     paths-ignore:
       - "docs/**"
       - "example/**"
       - "test/**"
   pull_request:
+    branches:
+      - '**'
     paths-ignore:
       - "docs/**"
       - "example/**"
       - "test/**"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  generate-matrix:
+    name: "Generate build matrix for ${{ github.workflow }}"
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - id: set-matrix
+        run: python .github/generate-job-matrix.py --preset conan --seed 42 --debug combinations counts
   test_package:
-    name: ${{ matrix.config.name }} ${{ matrix.build_type }}
+    name: "${{ matrix.config.name }} C++${{ matrix.std }} ${{ matrix.formatting }} ${{ matrix.contracts }} ${{ matrix.build_type }}"
     runs-on: ${{ matrix.config.os }}
+    needs: generate-matrix
     strategy:
       fail-fast: false
       matrix:
-        config:
-          # - {
-          #     name: "Windows MSVC 14.2",
-          #     os: windows-2019,
-          #     compiler: { type: VISUAL, version: 16, cc: "", cxx: "", std: 20 },
-          #   }
-          # - {
-          #     name: "Windows MSVC 14.3",
-          #     os: windows-2022,
-          #     compiler: { type: MSVC, version: 193, cc: "", cxx: "", std: 23 },
-          #   }
-          - {
-              name: "Ubuntu GCC-11",
-              os: ubuntu-22.04,
-              compiler:
-                {
-                  type: GCC,
-                  version: 11,
-                  cc: "gcc-11",
-                  cxx: "g++-11",
-                  std: 20,
-                },
-            }
-          - {
-              name: "Ubuntu GCC-12",
-              os: ubuntu-22.04,
-              compiler:
-                {
-                  type: GCC,
-                  version: 12,
-                  cc: "gcc-12",
-                  cxx: "g++-12",
-                  std: 20,
-                },
-            }
-          - {
-              name: "Ubuntu GCC-13",
-              os: ubuntu-22.04,
-              compiler:
-                {
-                  type: GCC,
-                  version: 13,
-                  cc: "gcc-13",
-                  cxx: "g++-13",
-                  std: 20,
-                },
-            }
-          - {
-              name: "Ubuntu Clang-16 + libc++",
-              os: ubuntu-22.04,
-              compiler:
-                {
-                  type: CLANG,
-                  version: 16,
-                  cc: "clang-16",
-                  cxx: "clang++-16",
-                  std: 20,
-                },
-              lib: "libc++",
-            }
-          - {
-              name: "Ubuntu Clang-17 + libc++",
-              os: ubuntu-22.04,
-              compiler:
-                {
-                  type: CLANG,
-                  version: 17,
-                  cc: "clang-17",
-                  cxx: "clang++-17",
-                  std: 20,
-                },
-              lib: "libc++",
-              conan-config: "",
-            }
-          # - {
-          #     name: "MacOS Apple Clang 13",
-          #     os: macos-11,
-          #     compiler:
-          #       {
-          #         type: APPLE_CLANG,
-          #         version: "13.0",
-          #         cc: "clang",
-          #         cxx: "clang++",
-          #         std: 20,
-          #       },
-          #   }
-        build_type: ["Release", "Debug"]
+        include: ${{fromJson(needs.generate-matrix.outputs.matrix)}}
 
     env:
       CC: ${{ matrix.config.compiler.cc }}
@@ -136,64 +72,67 @@ jobs:
     steps:
       - name: Downcase 'build_type'
         id: build_type
-        uses: ASzc/change-string-case-action@v5
+        uses: ASzc/change-string-case-action@v6
         with:
           string: ${{ matrix.build_type }}
       - uses: actions/checkout@v4
+      - name: Generate unique cache id
+        shell: bash
+        run: echo "cache_id=$(/bin/date -u "+%Y%m%d")" >> $GITHUB_ENV
       - name: Cache Conan data
-        uses: actions/cache@v3
+        uses: actions/cache@v4
+        if: always()
         env:
           cache-name: cache-conan-data
         with:
           path: ~/.conan2/p
-          key: build-${{ matrix.config.os }}-${{ matrix.build_type }}-${{ matrix.config.compiler.type }}-${{ matrix.config.compiler.version }}-${{ matrix.config.lib }}
+          key: cmake-${{ matrix.config.os }}-${{ matrix.formatting }}-${{ matrix.contracts }}-${{ matrix.config.compiler.type }}-${{ matrix.config.lib }}-${{ matrix.build_type }}-${{ matrix.config.compiler.version }}-${{ matrix.std }}-${{ env.cache_id }}
           restore-keys: |
-            build-${{ matrix.config.os }}-${{ matrix.build_type }}-${{ matrix.config.compiler.type }}-${{ matrix.config.compiler.version }}-${{ matrix.config.lib }}
-            build-${{ matrix.config.os }}-${{ matrix.build_type }}-${{ matrix.config.compiler.type }}-${{ matrix.config.compiler.version }}-
-            build-${{ matrix.config.os }}-${{ matrix.build_type }}-${{ matrix.config.compiler.type }}-
-            build-${{ matrix.config.os }}-${{ matrix.build_type }}-
-            build-${{ matrix.config.os }}-
+            cmake-${{ matrix.config.os }}-${{ matrix.formatting }}-${{ matrix.contracts }}-${{ matrix.config.compiler.type }}-${{ matrix.config.lib }}-${{ matrix.build_type }}-${{ matrix.config.compiler.version }}-${{ matrix.std }}-
+            cmake-${{ matrix.config.os }}-${{ matrix.formatting }}-${{ matrix.contracts }}-${{ matrix.config.compiler.type }}-${{ matrix.config.lib }}-${{ matrix.build_type }}-${{ matrix.config.compiler.version }}-
+            cmake-${{ matrix.config.os }}-${{ matrix.formatting }}-${{ matrix.contracts }}-${{ matrix.config.compiler.type }}-${{ matrix.config.lib }}-${{ matrix.build_type }}-
+            cmake-${{ matrix.config.os }}-${{ matrix.formatting }}-${{ matrix.contracts }}-${{ matrix.config.compiler.type }}-${{ matrix.config.lib }}-
+            cmake-${{ matrix.config.os }}-${{ matrix.formatting }}-${{ matrix.contracts }}-${{ matrix.config.compiler.type }}-
+            cmake-${{ matrix.config.os }}-${{ matrix.formatting }}-${{ matrix.contracts }}-
+            cmake-${{ matrix.config.os }}-${{ matrix.formatting }}-
+            cmake-${{ matrix.config.os }}-
       - name: Install gcc-13
         if: matrix.config.compiler.type == 'GCC' && matrix.config.compiler.version == '13'
         shell: bash
         run: |
           sudo apt install -y g++-${{ matrix.config.compiler.version }}
-      - name: Install Clang
-        if: matrix.config.compiler.type == 'CLANG'
+      - name: Install Clang with apt
+        if: matrix.config.compiler.type == 'CLANG' && matrix.config.os != 'macos-14'
         shell: bash
         working-directory: ${{ env.HOME }}
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
           sudo ./llvm.sh ${{ matrix.config.compiler.version }}
+          sudo apt install -y clang-tools-${{ matrix.config.compiler.version }}
+      - name: Install Clang using homebrew
+        if: matrix.config.compiler.type == 'CLANG' && matrix.config.os == 'macos-14'
+        shell: bash
+        run: |
+          brew install llvm@18
       - name: Install Libc++
-        if: matrix.config.compiler.type == 'CLANG' && matrix.config.lib == 'libc++'
+        if: matrix.config.compiler.type == 'CLANG' && matrix.config.lib == 'libc++' && matrix.config.os != 'macos-14'
         shell: bash
         run: |
           sudo apt install -y libc++-${{ matrix.config.compiler.version }}-dev libc++abi-${{ matrix.config.compiler.version }}-dev libunwind-${{ matrix.config.compiler.version }}-dev
-      - name: Select Xcode 13.0
-        if: matrix.config.compiler.type == 'APPLE_CLANG' && matrix.config.compiler.version == '13.0'
+      - name: Select Xcode version
+        if: matrix.config.compiler.type == 'APPLE_CLANG'
         shell: bash
         run: |
-          sudo xcode-select -s "/Applications/Xcode_13.0.app"
+          sudo xcode-select -s /Applications/Xcode_${{ matrix.config.compiler.version }}.app && /usr/bin/xcodebuild -version
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
       - name: Install Ninja
         shell: bash
         run: |
-          if [ $RUNNER_OS == 'Linux' ]; then
-            sudo apt install -y ninja-build
-          elif [ $RUNNER_OS == 'Windows' ]; then
-            choco install ninja
-          elif [ $RUNNER_OS == 'macOS' ]; then
-            brew update
-            brew install ninja
-          else
-            echo "'$RUNNER_OS' not supported"
-            exit 1
-          fi
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.8"
+          pip install -U ninja
       - name: Install Conan
         shell: bash
         run: |
@@ -206,14 +145,24 @@ jobs:
           if [[ "${{ matrix.config.compiler.type }}" == "CLANG" ]]; then
             sed -i.backup '/^\[settings\]$/,/^\[/ s/^compiler.libcxx=.*/compiler.libcxx=${{ matrix.config.lib }}/' ~/.conan2/profiles/default
           fi
-          sed -i.backup '/^\[settings\]$/,/^\[/ s/^compiler.cppstd=.*/compiler.cppstd=${{ matrix.config.compiler.std }}/' ~/.conan2/profiles/default
+          sed -i.backup '/^\[settings\]$/,/^\[/ s/^compiler.cppstd=.*/compiler.cppstd=${{ matrix.std }}/' ~/.conan2/profiles/default
           sed -i.backup '/^\[settings\]$/,/^\[/ s/^build_type=.*/build_type=${{ matrix.build_type }}/' ~/.conan2/profiles/default
           conan profile show -pr default
+      - name: Set 'std_format' and 'import_std' environment variables
+        shell: bash
+        run: |
+          echo "std_format=$([ "${{ matrix.formatting }}" == "std::format" ] && echo "True" || echo "False")" >> $GITHUB_ENV
+          echo "import_std=$([ "${{ matrix.std }}" -ge "23" ] && [ "${{ matrix.config.cxx_modules }}" == "True" ] && [ "${{ matrix.config.contracts }}" == "none" ] && [ "${{ matrix.formatting }}" == "std::format" ] && echo "True" || echo "False")" >> $GITHUB_ENV
       - name: Install Conan dependencies
         shell: bash
         run: |
-          conan install . -b missing -c tools.cmake.cmaketoolchain:generator="Ninja Multi-Config" -c user.build:all=False
-          mv CMakeUserPresets.json src
+          conan install . -b missing -c tools.cmake.cmaketoolchain:generator="Ninja Multi-Config" -c user.mp-units.build:all=False \
+                          -o '&:cxx_modules=${{ matrix.config.cxx_modules }}' -o '&:import_std=${{ env.import_std }}' -o '&:std_format=${{ env.std_format }}' -o '&:contracts=${{ matrix.contracts }}'
+      - name: Provide dependencies for the build
+        shell: bash
+        working-directory: src
+        run: |
+          echo -e '{\n    "version": 4,\n    "include": [\n        "../CMakeUserPresets.json"\n    ]\n}' | cat > CMakeUserPresets.json
       - name: Configure mp-units CMake
         if: matrix.config.compiler.type == 'VISUAL' || matrix.config.compiler.type == 'MSVC'
         shell: cmd
@@ -238,7 +187,7 @@ jobs:
         shell: bash
         working-directory: test_package
         run: |
-          cp ../src/CMakeUserPresets.json .
+          echo -e '{\n    "version": 4,\n    "include": [\n        "../CMakeUserPresets.json"\n    ]\n}' | cat > CMakeUserPresets.json
       - name: Build test_package CMake (local build)
         if: matrix.config.compiler.type == 'VISUAL' || matrix.config.compiler.type == 'MSVC'
         shell: cmd
@@ -254,7 +203,13 @@ jobs:
         run: |
           cmake --preset conan-default -Dmp-units_DIR=../build -Bbuild/local
           cmake --build build/local --config ${{ matrix.build_type }}
+      - name: Run test_package-headers (local build)
+        shell: bash
+        working-directory: test_package/build/local/${{ matrix.build_type }}
+        run: |
+          ./test_package-headers
       - name: Run test_package (local build)
+        if: matrix.config.cxx_modules == 'True'
         shell: bash
         working-directory: test_package/build/local/${{ matrix.build_type }}
         run: |
@@ -274,8 +229,20 @@ jobs:
         run: |
           cmake --preset conan-default -DCMAKE_INSTALL_PREFIX=../out -Bbuild/install
           cmake --build build/install --config ${{ matrix.build_type }}
+      - name: Run test_package-headers (installation)
+        shell: bash
+        working-directory: test_package/build/install/${{ matrix.build_type }}
+        run: |
+          ./test_package-headers
       - name: Run test_package (installation)
+        if: matrix.config.cxx_modules == 'True'
         shell: bash
         working-directory: test_package/build/install/${{ matrix.build_type }}
         run: |
           ./test_package
+      - name: Clean Conan cache before backup
+        shell: bash
+        run: |
+          conan remove *#~latest --confirm
+          conan remove *:*#~latest --confirm
+          conan cache clean "*" -s -b -d

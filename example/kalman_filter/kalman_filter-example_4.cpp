@@ -21,51 +21,59 @@
 // SOFTWARE.
 
 #include "kalman.h"
+#include <mp-units/ext/format.h>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
+#include <array>
+#include <iostream>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units;
+#else
 #include <mp-units/format.h>
 #include <mp-units/systems/isq/space_and_time.h>
 #include <mp-units/systems/si/unit_symbols.h>
-#include <array>
-#include <iostream>
+#endif
 
 // Based on: https://www.kalmanfilter.net/alphabeta.html#ex4
 
-template<class T>
-  requires mp_units::is_scalar<T>
-inline constexpr bool mp_units::is_vector<T> = true;
-
 using namespace mp_units;
 
-void print_header(const kalman::State auto& initial)
+void print_header(const kalman::SystemState auto& initial)
 {
   std::cout << MP_UNITS_STD_FMT::format("Initial: {}\n", initial);
   std::cout << MP_UNITS_STD_FMT::format("{:>2} | {:>8} | {:>35} | {:>35}\n", "N", "Measured", "Curr. Estimate",
                                         "Next Estimate");
 }
 
-void print(auto iteration, Quantity auto measured, const kalman::State auto& current, const kalman::State auto& next)
+void print(auto iteration, QuantityPoint auto measured, const kalman::SystemState auto& current,
+           const kalman::SystemState auto& next)
 {
-  std::cout << MP_UNITS_STD_FMT::format("{:2} | {:8} | {:>35.1} | {:>35.1}\n", iteration, measured, current, next);
+  std::cout << MP_UNITS_STD_FMT::format(
+    "{:2} | {:8} | {:35:0[:N[.2f]]1[:N[.2f]]2[:N[.2f]]} | {:35:0[:N[.2f]]1[:N[.2f]]2[:N[.2f]]}\n", iteration, measured,
+    current, next);
 }
 
 int main()
 {
   using namespace mp_units::si::unit_symbols;
-  using state = kalman::state<quantity<isq::position_vector[m]>, quantity<isq::velocity[m / s]>,
-                              quantity<isq::acceleration[m / s2]>>;
-  const auto interval = isq::duration(5. * s);
-  const state initial = {30 * km, 50 * m / s, 0 * m / s2};
+  using qp = quantity_point<isq::displacement[m]>;
+  using state =
+    kalman::system_state<qp, quantity_point<isq::velocity[m / s]>, quantity_point<isq::acceleration[m / s2]>>;
 
-  const quantity<isq::position_vector[m], int> measurements[] = {30'160 * m, 30'365 * m, 30'890 * m, 31'050 * m,
-                                                                 31'785 * m, 32'215 * m, 33'130 * m, 34'510 * m,
-                                                                 36'010 * m, 37'265 * m};
+  const quantity interval = isq::duration(5. * s);
+  const state initial{qp{30 * km}, quantity_point{50 * m / s}, quantity_point{0 * m / s2}};
+  const std::array measurements = {qp{30'221 * m}, qp{30'453 * m}, qp{30'906 * m}, qp{30'999 * m}, qp{31'368 * m},
+                                   qp{31'978 * m}, qp{32'526 * m}, qp{33'379 * m}, qp{34'698 * m}, qp{36'275 * m}};
   std::array gain = {0.5 * one, 0.4 * one, 0.1 * one};
 
   print_header(initial);
   state next = state_extrapolation(initial, interval);
-  for (int index = 1; const auto& measured : measurements) {
-    const auto& previous = next;
-    const auto current = state_update(previous, measured, gain, interval);
+  for (int index = 1; const auto& measurement : measurements) {
+    const state& previous = next;
+    const state current = state_update(previous, measurement, gain, interval);
     next = state_extrapolation(current, interval);
-    print(index++, measured, current, next);
+    print(index++, measurement, current, next);
   }
 }

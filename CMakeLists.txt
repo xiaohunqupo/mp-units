@@ -20,15 +20,29 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.25)
 project(mp-units-dev LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/src/cmake")
+include(CheckCacheVarValues)
 
 set(projectPrefix MP_UNITS_)
 
-option(${projectPrefix}BUILD_LA "Build code depending on the linear algebra library" ON)
-message(STATUS "${projectPrefix}BUILD_LA: ${${projectPrefix}BUILD_LA}")
+option(${projectPrefix}DEV_BUILD_LA "Build code depending on the linear algebra library" OFF)
+option(${projectPrefix}DEV_IWYU "Enables include-what-you-use" OFF)
+option(${projectPrefix}DEV_CLANG_TIDY "Enables clang-tidy" OFF)
+set(${projectPrefix}DEV_TIME_TRACE
+    NONE
+    CACHE STRING
+          "Enables `-ftime-trace` for a selected scope: NONE, ALL, MODULES, HEADERS. MODULES and HEADERS do not affect unit tests."
+)
+check_cache_var_values(DEV_TIME_TRACE NONE ALL MODULES HEADERS)
+
+message(STATUS "${projectPrefix}DEV_BUILD_LA: ${${projectPrefix}DEV_BUILD_LA}")
+message(STATUS "${projectPrefix}DEV_IWYU: ${${projectPrefix}DEV_IWYU}")
+message(STATUS "${projectPrefix}DEV_CLANG_TIDY: ${${projectPrefix}DEV_CLANG_TIDY}")
+message(STATUS "${projectPrefix}DEV_TIME_TRACE: ${${projectPrefix}DEV_TIME_TRACE}")
 
 # make sure that the file is being used as an entry point
 include(modern_project_structure)
@@ -38,43 +52,35 @@ ensure_entry_point()
 include(ccache)
 enable_ccache(BASE_DIR ${PROJECT_SOURCE_DIR})
 
-# set restrictive compilation warnings
-include(warnings)
-set_warnings()
+if(${projectPrefix}DEV_IWYU)
+    set(${projectPrefix}BUILD_AS_SYSTEM_HEADERS ON)
 
-# set all contracts checking in a Debug build
-add_compile_definitions($<$<CONFIG:Debug>:gsl_CONFIG_CONTRACT_CHECKING_AUDIT>)
-
-# enable include-what-you-use
-option(${projectPrefix}IWYU "Enables include-what-you-use" OFF)
-
-if(${projectPrefix}IWYU)
     include(include-what-you-use)
     enable_iwyu(
+        REQUIRED
         MAPPING_FILE "${PROJECT_SOURCE_DIR}/.mp-units.imp"
         NO_FORWARD_DECLARATIONS QUOTED_INCLUDES_FIRST
         MAX_LINE_LENGTH 120
         NO_COMMENTS
     )
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(${projectPrefix}AS_SYSTEM_HEADERS ON)
-    endif()
+elseif(${projectPrefix}DEV_CLANG_TIDY)
+    include(static_analysis)
+    enable_clang_tidy(PROGRAM clang-tidy-18 REQUIRED)
+else()
+    # set restrictive compilation warnings
+    # (some gcc warnings are not recognized by IWYU which is based on clang)
+    include(warnings)
+    set_warnings()
 endif()
-
-# enable_clang_tidy()
 
 # add project code
 add_subdirectory(src)
 
-# add usage example
-add_subdirectory(example)
+if(NOT ${projectPrefix}API_FREESTANDING)
+    # add usage example
+    add_subdirectory(example)
+endif()
 
 # add unit tests
 enable_testing()
-
 add_subdirectory(test)
-
-# tests for standalone headers
-include(TestPublicHeaders)
-add_public_header_test(test_headers mp-units::mp-units)

@@ -21,27 +21,39 @@
 // SOFTWARE.
 
 #include "geographic.h"
-#include <mp-units/ostream.h>
-#include <mp-units/quantity_point.h>
-#include <mp-units/systems/international/international.h>
-#include <mp-units/systems/isq/space_and_time.h>
-#include <mp-units/systems/si/unit_symbols.h>
+#include "ranged_representation.h"
+#include <mp-units/compat_macros.h>
+#include <mp-units/ext/format.h>
 #include <cassert>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
+#include <cstdint>
 #include <iostream>
+#include <string>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units;
+#else
+#include <mp-units/bits/fmt.h>
+#include <mp-units/systems/international.h>
+#include <mp-units/systems/isq/space_and_time.h>
+#include <mp-units/systems/si.h>
+#endif
 
 using namespace mp_units;
 using namespace geographic;
 
 // **** HAE ****
 
-enum class earth_gravity_model { egm84_15, egm95_5, egm2008_1 };
+enum class earth_gravity_model : std::int8_t { egm84_15, egm95_5, egm2008_1 };
 
 template<earth_gravity_model M>
-struct height_above_ellipsoid_t : absolute_point_origin<isq::altitude> {
+struct height_above_ellipsoid_t final : absolute_point_origin<isq::altitude> {
   static constexpr earth_gravity_model egm = M;
 };
 template<earth_gravity_model M>
-inline constexpr height_above_ellipsoid_t<M> height_above_ellipsoid;
+constexpr height_above_ellipsoid_t<M> height_above_ellipsoid;  // NOLINT(google-readability-casting)
 
 template<earth_gravity_model M>
 using hae_altitude = quantity_point<isq::altitude[si::metre], height_above_ellipsoid<M>>;
@@ -74,13 +86,13 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
   return os << a - a.absolute_point_origin << " HAE(" << to_text(a.absolute_point_origin.egm) << ")";
 }
 
-template<QuantityPoint QP>
+template<QuantityPoint QP, typename Char>
   requires(is_hae(QP::absolute_point_origin))
-struct MP_UNITS_STD_FMT::formatter<QP> : formatter<typename QP::quantity_type> {
+struct MP_UNITS_STD_FMT::formatter<QP, Char> : formatter<typename QP::quantity_type, Char> {
   template<typename FormatContext>
-  auto format(const QP& a, FormatContext& ctx)
+  auto format(const QP& a, FormatContext& ctx) const -> decltype(ctx.out())
   {
-    formatter<typename QP::quantity_type>::format(a - a.absolute_point_origin, ctx);
+    formatter<typename QP::quantity_type, Char>::format(a - a.absolute_point_origin, ctx);
     return MP_UNITS_STD_FMT::format_to(ctx.out(), " HAE({})", to_text(QP::absolute_point_origin.egm));
   }
 };
@@ -97,8 +109,8 @@ template<earth_gravity_model M>
 hae_altitude<M> to_hae(msl_altitude msl, position<long double> pos)
 {
   const auto geoid_undulation =
-    isq::height(GeographicLibWhatsMyOffset(pos.lat.quantity_from(equator).numerical_value_in(si::degree),
-                                           pos.lon.quantity_from(prime_meridian).numerical_value_in(si::degree)) *
+    isq::height(GeographicLibWhatsMyOffset(pos.lat.quantity_from_zero().numerical_value_in(si::degree),
+                                           pos.lon.quantity_from_zero().numerical_value_in(si::degree)) *
                 si::metre);
   return height_above_ellipsoid<M> + (msl - mean_sea_level - geoid_undulation);
 }
@@ -107,7 +119,7 @@ hae_altitude<M> to_hae(msl_altitude msl, position<long double> pos)
 // **** HAL ****
 
 // clang-format off
-inline constexpr struct height_above_launch : absolute_point_origin<isq::altitude> {} height_above_launch;
+inline constexpr struct height_above_launch final : absolute_point_origin<isq::altitude> {} height_above_launch;
 // clang-format on
 
 using hal_altitude = quantity_point<isq::altitude[si::metre], height_above_launch>;
@@ -118,12 +130,12 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
   return os << a.quantity_from(height_above_launch) << " HAL";
 }
 
-template<>
-struct MP_UNITS_STD_FMT::formatter<hal_altitude> : formatter<hal_altitude::quantity_type> {
+template<typename Char>
+struct MP_UNITS_STD_FMT::formatter<hal_altitude, Char> : formatter<hal_altitude::quantity_type, Char> {
   template<typename FormatContext>
-  auto format(const hal_altitude& a, FormatContext& ctx)
+  auto format(const hal_altitude& a, FormatContext& ctx) const -> decltype(ctx.out())
   {
-    formatter<hal_altitude::quantity_type>::format(a.quantity_from(height_above_launch), ctx);
+    formatter<hal_altitude::quantity_type, Char>::format(a.quantity_from(height_above_launch), ctx);
     return MP_UNITS_STD_FMT::format_to(ctx.out(), " HAL");
   }
 };
@@ -136,12 +148,12 @@ class unmanned_aerial_vehicle {
   msl_altitude launch_ = current_;
 public:
   void take_off(msl_altitude alt) { launch_ = alt; }
-  msl_altitude take_off() const { return launch_; }
+  [[nodiscard]] msl_altitude take_off() const { return launch_; }
 
   void current(msl_altitude alt) { current_ = alt; }
-  msl_altitude current() const { return current_; }
+  [[nodiscard]] msl_altitude current() const { return current_; }
 
-  hal_altitude hal() const { return height_above_launch + (current_ - launch_); }
+  [[nodiscard]] hal_altitude hal() const { return height_above_launch + current_.quantity_from(launch_); }
 };
 
 
@@ -153,10 +165,10 @@ int main()
   unmanned_aerial_vehicle uav;
   uav.take_off(mean_sea_level + 6'000 * ft);
   uav.current(mean_sea_level + 10'000 * ft);
-  std::cout << MP_UNITS_STD_FMT::format("hal = {}\n", uav.hal());
+  std::cout << MP_UNITS_STD_FMT::format("hal = {::N[.2f]}\n", uav.hal());
 
-  msl_altitude ground_level = mean_sea_level + 123 * m;
-  std::cout << MP_UNITS_STD_FMT::format("agl = {}\n", uav.current() - ground_level);
+  const msl_altitude ground_level = mean_sea_level + 123 * m;
+  std::cout << MP_UNITS_STD_FMT::format("agl = {::N[.2f]}\n", uav.current().quantity_from(ground_level));
 
   struct waypoint {
     std::string name;
@@ -164,7 +176,7 @@ int main()
     msl_altitude msl_alt;
   };
 
-  waypoint wpt = {"EPPR", {54.24772_N, 18.6745_E}, mean_sea_level + 16. * ft};
-  std::cout << MP_UNITS_STD_FMT::format("{}: {} {}, {:%.2Q %q}, {:%.2Q %q}\n", wpt.name, wpt.pos.lat, wpt.pos.lon,
+  const waypoint wpt = {"EPPR", {54.24772_N, 18.6745_E}, mean_sea_level + 16. * ft};
+  std::cout << MP_UNITS_STD_FMT::format("{}: {} {}, {::N[.2f]}, {::N[.2f]}\n", wpt.name, wpt.pos.lat, wpt.pos.lon,
                                         wpt.msl_alt, to_hae<earth_gravity_model::egm2008_1>(wpt.msl_alt, wpt.pos));
 }

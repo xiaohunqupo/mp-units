@@ -23,22 +23,28 @@
 #pragma once
 
 #include "ranged_representation.h"
-#include <mp-units/bits/fmt_hacks.h>
-#include <mp-units/compare.h>
-#include <mp-units/format.h>
-#include <mp-units/math.h>
-#include <mp-units/quantity.h>
-#include <mp-units/quantity_point.h>
-#include <mp-units/systems/isq/space_and_time.h>
-#include <mp-units/systems/si/units.h>
+#include <mp-units/compat_macros.h>
+#include <mp-units/ext/format.h>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
 #include <compare>
 #include <limits>
 #include <numbers>
 #include <ostream>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units;
+#else
+#include <mp-units/format.h>
+#include <mp-units/framework.h>
+#include <mp-units/systems/isq/space_and_time.h>
+#include <mp-units/systems/si.h>
+#endif
 
 namespace geographic {
 
-inline constexpr struct mean_sea_level : mp_units::absolute_point_origin<mp_units::isq::altitude> {
+inline constexpr struct mean_sea_level final : mp_units::absolute_point_origin<mp_units::isq::altitude> {
 } mean_sea_level;
 
 using msl_altitude = mp_units::quantity_point<mp_units::isq::altitude[mp_units::si::metre], mean_sea_level>;
@@ -52,21 +58,23 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
 
 }  // namespace geographic
 
-template<>
-struct MP_UNITS_STD_FMT::formatter<geographic::msl_altitude> : formatter<geographic::msl_altitude::quantity_type> {
+template<typename Char>
+struct MP_UNITS_STD_FMT::formatter<geographic::msl_altitude, Char> :
+    formatter<geographic::msl_altitude::quantity_type, Char> {
   template<typename FormatContext>
-  auto format(const geographic::msl_altitude& a, FormatContext& ctx)
+  auto format(const geographic::msl_altitude& a, FormatContext& ctx) const -> decltype(ctx.out())
   {
-    formatter<geographic::msl_altitude::quantity_type>::format(a - geographic::mean_sea_level, ctx);
+    ctx.advance_to(
+      formatter<geographic::msl_altitude::quantity_type, Char>::format(a - geographic::mean_sea_level, ctx));
     return MP_UNITS_STD_FMT::format_to(ctx.out(), " AMSL");
   }
 };
 
 namespace geographic {
 
-inline constexpr struct equator : mp_units::absolute_point_origin<mp_units::isq::angular_measure> {
+inline constexpr struct equator final : mp_units::absolute_point_origin<mp_units::isq::angular_measure> {
 } equator;
-inline constexpr struct prime_meridian : mp_units::absolute_point_origin<mp_units::isq::angular_measure> {
+inline constexpr struct prime_meridian final : mp_units::absolute_point_origin<mp_units::isq::angular_measure> {
 } prime_meridian;
 
 
@@ -80,20 +88,14 @@ template<class CharT, class Traits, typename T>
 std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const latitude<T>& lat)
 {
   const auto& q = lat.quantity_ref_from(geographic::equator);
-  if (is_gteq_zero(q))
-    return os << q << " N";
-  else
-    return os << -q << " S";
+  return (is_gteq_zero(q)) ? (os << q << " N") : (os << -q << " S");
 }
 
 template<class CharT, class Traits, typename T>
 std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const longitude<T>& lon)
 {
   const auto& q = lon.quantity_ref_from(geographic::prime_meridian);
-  if (is_gteq_zero(q))
-    return os << q << " E";
-  else
-    return os << -q << " W";
+  return (is_gteq_zero(q)) ? (os << q << " E") : (os << -q << " W");
 }
 
 inline namespace literals {
@@ -133,29 +135,29 @@ class std::numeric_limits<geographic::longitude<T>> : public numeric_limits<T> {
   static constexpr auto max() noexcept { return geographic::longitude<T>(180); }
 };
 
-template<typename T>
-struct MP_UNITS_STD_FMT::formatter<geographic::latitude<T>> :
-    formatter<typename geographic::latitude<T>::quantity_type> {
+template<typename T, typename Char>
+struct MP_UNITS_STD_FMT::formatter<geographic::latitude<T>, Char> :
+    formatter<typename geographic::latitude<T>::quantity_type, Char> {
   template<typename FormatContext>
-  auto format(geographic::latitude<T> lat, FormatContext& ctx)
+  auto format(geographic::latitude<T> lat, FormatContext& ctx) const -> decltype(ctx.out())
   {
     const auto& q = lat.quantity_ref_from(geographic::equator);
-    formatter<typename geographic::latitude<T>::quantity_type>::format(is_gteq_zero(q) ? q : -q, ctx);
-    MP_UNITS_STD_FMT::format_to(ctx.out(), "{}", is_gteq_zero(q) ? " N" : "S");
-    return ctx.out();
+    ctx.advance_to(
+      formatter<typename geographic::latitude<T>::quantity_type, Char>::format(is_gteq_zero(q) ? q : -q, ctx));
+    return MP_UNITS_STD_FMT::format_to(ctx.out(), "{}", is_gteq_zero(q) ? " N" : "S");
   }
 };
 
-template<typename T>
-struct MP_UNITS_STD_FMT::formatter<geographic::longitude<T>> :
-    formatter<typename geographic::longitude<T>::quantity_type> {
+template<typename T, typename Char>
+struct MP_UNITS_STD_FMT::formatter<geographic::longitude<T>, Char> :
+    formatter<typename geographic::longitude<T>::quantity_type, Char> {
   template<typename FormatContext>
-  auto format(geographic::longitude<T> lon, FormatContext& ctx)
+  auto format(geographic::longitude<T> lon, FormatContext& ctx) const -> decltype(ctx.out())
   {
     const auto& q = lon.quantity_ref_from(geographic::prime_meridian);
-    formatter<typename geographic::longitude<T>::quantity_type>::format(is_gteq_zero(q) ? q : -q, ctx);
-    MP_UNITS_STD_FMT::format_to(ctx.out(), "{}", is_gteq_zero(q) ? " E" : " W");
-    return ctx.out();
+    ctx.advance_to(
+      formatter<typename geographic::longitude<T>::quantity_type, Char>::format(is_gteq_zero(q) ? q : -q, ctx));
+    return MP_UNITS_STD_FMT::format_to(ctx.out(), "{}", is_gteq_zero(q) ? " E" : " W");
   }
 };
 
@@ -170,17 +172,18 @@ struct position {
 };
 
 template<typename T>
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 distance spherical_distance(position<T> from, position<T> to)
 {
   using namespace mp_units;
   constexpr quantity earth_radius = 6'371 * isq::radius[si::kilo<si::metre>];
 
-  using isq::sin, isq::cos, isq::asin, isq::acos;
+  using si::sin, si::cos, si::asin, si::acos;
 
-  const quantity from_lat = from.lat.quantity_from(equator);
-  const quantity from_lon = from.lon.quantity_from(prime_meridian);
-  const quantity to_lat = to.lat.quantity_from(equator);
-  const quantity to_lon = to.lon.quantity_from(prime_meridian);
+  const quantity from_lat = from.lat.quantity_from_zero();
+  const quantity from_lon = from.lon.quantity_from_zero();
+  const quantity to_lat = to.lat.quantity_from_zero();
+  const quantity to_lon = to.lon.quantity_from_zero();
 
   // https://en.wikipedia.org/wiki/Great-circle_distance#Formulae
   if constexpr (sizeof(T) >= 8) {
@@ -190,14 +193,14 @@ distance spherical_distance(position<T> from, position<T> to)
     // const auto central_angle = 2 * asin(sqrt(0.5 - cos(to_lat - from_lat) / 2 + cos(from_lat) * cos(to_lat) * (1
     // - cos(lon2_rad - from_lon)) / 2));
 
-    return quantity_cast<isq::distance>(earth_radius * central_angle);
+    return quantity_cast<isq::distance>((earth_radius * central_angle).in(earth_radius.unit));
   } else {
     // the haversine formula
     const quantity sin_lat = sin((to_lat - from_lat) / 2);
     const quantity sin_lon = sin((to_lon - from_lon) / 2);
     const quantity central_angle = 2 * asin(sqrt(sin_lat * sin_lat + cos(from_lat) * cos(to_lat) * sin_lon * sin_lon));
 
-    return quantity_cast<isq::distance>(earth_radius * central_angle);
+    return quantity_cast<isq::distance>((earth_radius * central_angle).in(earth_radius.unit));
   }
 }
 

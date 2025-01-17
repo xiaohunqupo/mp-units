@@ -25,12 +25,23 @@
 // !!! renders correctly in the documentation "Examples" section.                 !!!
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#include <mp-units/compat_macros.h>
+#include <mp-units/ext/format.h>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
+#include <iomanip>
+#include <iostream>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units;
+#else
 #include <mp-units/format.h>
 #include <mp-units/ostream.h>
-#include <mp-units/systems/international/international.h>
-#include <mp-units/systems/isq/isq.h>
-#include <mp-units/systems/si/si.h>
-#include <iostream>
+#include <mp-units/systems/international.h>
+#include <mp-units/systems/isq.h>
+#include <mp-units/systems/si.h>
+#endif
 
 using namespace mp_units;
 
@@ -52,11 +63,11 @@ int main()
   constexpr quantity v6 = value_cast<m / s>(v4);
   constexpr quantity v7 = value_cast<int>(v6);
 
-  std::cout << v1 << '\n';                                                // 110 km/h
-  std::cout << v2 << '\n';                                                // 70 mi/h
-  std::cout << MP_UNITS_STD_FMT::format("{}", v3) << '\n';                // 110 km/h
-  std::cout << MP_UNITS_STD_FMT::format("{:*^14}", v4) << '\n';           // ***70 mi/h****
-  std::cout << MP_UNITS_STD_FMT::format("{:%Q in %q}", v5) << '\n';       // 30.5556 in m/s
-  std::cout << MP_UNITS_STD_FMT::format("{0:%Q} in {0:%q}", v6) << '\n';  // 31.2928 in m/s
-  std::cout << MP_UNITS_STD_FMT::format("{:%Q}", v7) << '\n';             // 31
+  std::cout << v1 << '\n';                                           // 110 km/h
+  std::cout << std::setw(10) << std::setfill('*') << v2 << '\n';     // ***70 mi/h
+  std::cout << MP_UNITS_STD_FMT::format("{:*^10}\n", v3);            // *110 km/h*
+  std::cout << MP_UNITS_STD_FMT::format("{:%N in %U of %D}\n", v4);  // 70 in mi/h of LT⁻¹
+  std::cout << MP_UNITS_STD_FMT::format("{::N[.2f]}\n", v5);         // 30.56 m/s
+  std::cout << MP_UNITS_STD_FMT::format("{::N[.2f]U[dn]}\n", v6);    // 31.29 m⋅s⁻¹
+  std::cout << MP_UNITS_STD_FMT::format("{:%N}\n", v7);              // 31
 }

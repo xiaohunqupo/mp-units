@@ -23,16 +23,26 @@
 #pragma once
 
 #include "validated_type.h"
-#include <mp-units/bits/external/hacks.h>
-#include <mp-units/bits/fmt.h>
-#include <mp-units/customization_points.h>
+#include <mp-units/bits/hacks.h>
+#include <mp-units/compat_macros.h>
+#include <mp-units/ext/format.h>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
 #include <algorithm>
 #include <concepts>
 #include <type_traits>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units.core;
+#else
+#include <mp-units/bits/fmt.h>
+#include <mp-units/framework/customization_points.h>
+#endif
 
 template<std::movable T, MP_UNITS_CONSTRAINED_NTTP_WORKAROUND(std::convertible_to<T>) auto Min,
          MP_UNITS_CONSTRAINED_NTTP_WORKAROUND(std::convertible_to<T>) auto Max>
-inline constexpr auto is_in_range = [](const auto& v) { return std::clamp(v, T{Min}, T{Max}) == v; };
+MP_UNITS_INLINE constexpr auto is_in_range = [](const auto& v) { return std::clamp(v, T{Min}, T{Max}) == v; };
 
 template<std::movable T, MP_UNITS_CONSTRAINED_NTTP_WORKAROUND(std::convertible_to<T>) auto Min,
          MP_UNITS_CONSTRAINED_NTTP_WORKAROUND(std::convertible_to<T>) auto Max>
@@ -52,18 +62,11 @@ public:
   }
 };
 
-template<typename T, auto Min, auto Max>
-inline constexpr bool mp_units::is_scalar<ranged_representation<T, Min, Max>> = mp_units::is_scalar<T>;
-
-template<typename T, auto Min, auto Max>
-inline constexpr bool mp_units::treat_as_floating_point<ranged_representation<T, Min, Max>> =
-  mp_units::treat_as_floating_point<T>;
-
-template<typename T, auto Min, auto Max>
-struct MP_UNITS_STD_FMT::formatter<ranged_representation<T, Min, Max>> : formatter<T> {
+template<typename T, auto Min, auto Max, typename Char>
+struct MP_UNITS_STD_FMT::formatter<ranged_representation<T, Min, Max>, Char> : formatter<T, Char> {
   template<typename FormatContext>
-  auto format(const ranged_representation<T, Min, Max>& v, FormatContext& ctx)
+  auto format(const ranged_representation<T, Min, Max>& v, FormatContext& ctx) const -> decltype(ctx.out())
   {
-    return formatter<T>::format(v.value(), ctx);
+    return formatter<T, Char>::format(v.value(), ctx);
   }
 };

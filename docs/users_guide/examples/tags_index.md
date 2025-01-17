@@ -1,5 +1,11 @@
 # Tags Index
 
+!!! note
+
+    **mp-units** usage example applications are meant to be built on all of
+    [the supported compilers](../../getting_started/cpp_compiler_support.md).
+    This is why they benefit from the [Wide Compatibility](../use_cases/wide_compatibility.md) mode.
+
 !!! tip
 
     All usage examples in this chapter are categorized with appropriate tags to simplify navigation and

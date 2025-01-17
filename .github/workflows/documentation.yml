@@ -27,31 +27,71 @@ on:
     branches:
       - master
       - main
+    tags:
+      - v*
+    paths:
+      - "docs/**"
+      - "CHANGELOG.md"
+      - "CONTRIBUTING.md"
+      - "mkdocs.yml"
 permissions:
   contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.x
       - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           key: mkdocs-material-${{ env.cache_id }}
           path: .cache
           restore-keys: |
             mkdocs-material-
-      - name: Installing pip packages
-        run: |
-          pip install conan mkdocs-material mike
       - name: Prepare git
         run: |
           git config --global user.name github-actions
           git config --global user.email github-actions@github.com
           git fetch origin gh-pages --depth=1
-      - name: Building docs
+      - name: Installing API reference dependencies
         run: |
-          mike deploy --push --update-aliases `conan inspect .  | sed -n -r 's/version: ([0-9]+.[0-9]+).[0-9]+/\1/p'` latest
+          sudo apt update
+          sudo apt install latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended lmodern
+          sudo apt install haskell-stack graphviz nodejs npm ghc cabal-install
+          npm install split mathjax-full mathjax-node-sre mathjax-node-cli
+          cabal update
+          echo "${{ github.workspace }}/node_modules/.bin" >> $GITHUB_PATH
+      - name: Get git repos with API reference tools
+        run: |
+          git clone https://github.com/JohelEGP/jegp.cmake_modules.git --depth=1
+          git clone https://github.com/JohelEGP/draft.git --branch=standardese_sources_base --depth=1
+          git clone https://github.com/JohelEGP/cxxdraft-htmlgen.git --branch=standardese_sources_base --depth=1
+      - name: Generate API reference
+        run: |
+          cmake -S docs/api_reference/src -B build \
+                -DCMAKE_MODULE_PATH="${{ github.workspace }}/jegp.cmake_modules/modules" \
+                -DJEGP_STANDARDESE_SOURCES_GIT_REPOSITORY="${{ github.workspace }}/draft" \
+                -DJEGP_CXXDRAFT_HTMLGEN_GIT_REPOSITORY="${{ github.workspace }}/cxxdraft-htmlgen"
+          cmake --build build
+          mv build/mp-units.html docs/api_reference/gen
+      - name: Installing pip dependencies
+        run: |
+          pip install conan mkdocs-material mkdocs-rss-plugin mkdocs-material[imaging] mkdocs-exclude mike
+      - name: Building docs for a released version
+        if: startsWith(github.event.ref, 'refs/tags/v')
+        run: |
+          mike deploy --push --update-aliases `conan inspect .  | sed -n -r 's/version: ([0-9]+.[0-9]+).[0-9]+/\1/p'`
+      - name: Building docs for a development version
+        if: ${{!startsWith(github.event.ref, 'refs/tags/v')}}
+        run: |
+          mike deploy --push --update-aliases HEAD latest

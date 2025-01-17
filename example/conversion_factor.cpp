@@ -15,12 +15,21 @@
  along with this program. If not, see http://www.gnu.org/licenses./
 */
 
-#include <mp-units/format.h>
-#include <mp-units/systems/isq/space_and_time.h>
-#include <mp-units/systems/si/unit_symbols.h>
-#include <mp-units/systems/si/units.h>
+#include <mp-units/compat_macros.h>
+#include <mp-units/ext/format.h>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
+#include <concepts>
 #include <iostream>
-#include <type_traits>
+#include <string>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units;
+#else
+#include <mp-units/format.h>
+#include <mp-units/systems/si.h>
+#endif
 
 /*
   get conversion factor from one dimensionally equivalent
@@ -31,7 +40,7 @@ namespace {
 
 template<mp_units::Quantity Target, mp_units::Quantity Source>
   requires std::constructible_from<Target, Source>
-inline constexpr double conversion_factor(Target, Source)
+constexpr double conversion_factor(Target, Source)
 {
   return (1. * Source::reference).force_numerical_value_in(Target::unit);
 }
@@ -53,7 +62,7 @@ int main()
 
   std::cout << MP_UNITS_STD_FMT::format("therefore ratio lengthA / lengthB == {}\n\n", lengthA / lengthB);
 
-  std::cout << MP_UNITS_STD_FMT::format("conversion factor from lengthA::unit of {:%q} to lengthB::unit of {:%q}:\n\n",
+  std::cout << MP_UNITS_STD_FMT::format("conversion factor from lengthA::unit of {:%U} to lengthB::unit of {:%U}:\n\n",
                                         lengthA, lengthB)
             << MP_UNITS_STD_FMT::format("lengthB.value( {} ) == lengthA.value( {} ) * conversion_factor( {} )\n",
                                         lengthB.numerical_value_ref_in(lengthB.unit),

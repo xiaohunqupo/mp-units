@@ -25,13 +25,21 @@
 // !!! renders correctly in the documentation "Examples" section.                 !!!
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#include <mp-units/ostream.h>
-#include <mp-units/systems/cgs/cgs.h>
-#include <mp-units/systems/international/international.h>
-#include <mp-units/systems/isq/isq.h>
-#include <mp-units/systems/si/si.h>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
 #include <exception>
 #include <iostream>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units;
+#else
+#include <mp-units/ostream.h>
+#include <mp-units/systems/cgs.h>
+#include <mp-units/systems/international.h>
+#include <mp-units/systems/isq.h>
+#include <mp-units/systems/si.h>
+#endif
 
 namespace {
 
@@ -90,14 +98,14 @@ void example()
     print_result(distance, duration, avg_speed(distance, duration));
   }
 
-  // Customary Units (int)
+  // International mile (int)
   {
     using namespace mp_units::international::unit_symbols;
 
     constexpr auto distance = 140 * mi;
     constexpr auto duration = 2 * h;
 
-    std::cout << "\nUS Customary Units with 'int' as representation\n";
+    std::cout << "\nInternational mile with 'int' as representation\n";
 
     // it is not possible to make a lossless conversion of miles to meters on an integral type
     // (explicit cast needed)
@@ -106,20 +114,19 @@ void example()
     print_result(distance, duration, avg_speed(distance, duration));
   }
 
-  // Customary Units (double)
+  // International mile (double)
   {
     using namespace mp_units::international::unit_symbols;
 
     constexpr auto distance = 140. * mi;
     constexpr auto duration = 2. * h;
 
-    std::cout << "\nUS Customary Units with 'double' as representation\n";
+    std::cout << "\nInternational mile with 'double' as representation\n";
 
     // conversion from a floating-point to an integral type is a truncating one so an explicit cast is needed
     // also it is not possible to make a lossless conversion of miles to meters on an integral type
     // (explicit cast needed)
-    print_result(distance, duration,
-                 fixed_int_si_avg_speed(value_cast<int>(distance.force_in(m)), value_cast<int>(duration)));
+    print_result(distance, duration, fixed_int_si_avg_speed(value_cast<m, int>(distance), value_cast<int>(duration)));
     print_result(distance, duration, fixed_double_si_avg_speed(distance, duration));
     print_result(distance, duration, avg_speed(distance, duration));
   }
@@ -148,8 +155,7 @@ void example()
     // conversion from a floating-point to an integral type is a truncating one so an explicit cast is needed
     // it is not possible to make a lossless conversion of centimeters to meters on an integral type
     // (explicit cast needed)
-    print_result(distance, duration,
-                 fixed_int_si_avg_speed(value_cast<int>(distance.force_in(m)), value_cast<int>(duration)));
+    print_result(distance, duration, fixed_int_si_avg_speed(value_cast<m, int>(distance), value_cast<int>(duration)));
 
     print_result(distance, duration, fixed_double_si_avg_speed(distance, duration));
     print_result(distance, duration, avg_speed(distance, duration));

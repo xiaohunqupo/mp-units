@@ -20,28 +20,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <mp-units/math.h>
-#include <mp-units/ostream.h>
-#include <mp-units/systems/isq_angle/isq_angle.h>
-#include <mp-units/systems/si/unit_symbols.h>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
 #include <iostream>
-
-template<class T>
-  requires mp_units::is_scalar<T>
-inline constexpr bool mp_units::is_vector<T> = true;
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units;
+#else
+#include <mp-units/ostream.h>
+#include <mp-units/systems/isq_angle.h>
+#include <mp-units/systems/si.h>
+#endif
 
 int main()
 {
   using namespace mp_units;
   using namespace mp_units::si::unit_symbols;
-  using namespace mp_units::angular::unit_symbols;
   using mp_units::angular::unit_symbols::deg;
   using mp_units::angular::unit_symbols::rad;
 
-  const auto lever = isq_angle::position_vector(20 * cm);
-  const auto force = isq_angle::force(500 * N);
-  const auto angle = isq_angle::angular_measure(90. * deg);
-  const auto torque = isq_angle::torque(lever * force * angular::sin(angle) / (1 * isq_angle::cotes_angle));
+  const quantity lever = isq_angle::position_vector(20 * cm);
+  const quantity force = isq_angle::force(500 * N);
+  const quantity angle = isq_angle::angular_measure(90. * deg);
+  const quantity torque = isq_angle::torque(lever * force * angular::sin(angle) / (1 * isq_angle::cotes_angle));
 
   std::cout << "Applying a perpendicular force of " << force << " to a " << lever << " long lever results in "
             << torque.in(N * m / rad) << " of torque.\n";

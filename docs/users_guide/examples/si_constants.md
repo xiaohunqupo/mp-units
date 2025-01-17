@@ -6,31 +6,28 @@ tags:
 
 # `si_constants`
 
-!!! example "[Try it on Compiler Explorer](https://godbolt.org/z/96hPY77h6)"
+!!! example "[Try it on Compiler Explorer](https://godbolt.org/z/eGqbW5d8K)"
 
 The next example presents all the seven defining constants of the SI system. We can observe
 how [Faster-than-lightspeed Constants](../framework_basics/faster_than_lightspeed_constants.md)
 work in practice.
 
 ```cpp title="si_constants.cpp" linenums="1"
---8<-- "example/si_constants.cpp:28:34"
+--8<-- "example/si_constants.cpp:28:40"
 ```
 
-As always, we start with the inclusion of all the needed header files. After that, for
-the simplicity of this example, we
-[hack the character of quantities](../framework_basics/character_of_a_quantity.md#hacking-the-character)
-to be able to express vector quantities with simple scalar types.
+As always, we start with the inclusion of all the needed header files.
+The main part of the example prints all of the SI-defining constants:
 
-```cpp title="si_constants.cpp" linenums="1"
---8<-- "example/si_constants.cpp:36:"
+```cpp title="si_constants.cpp" linenums="14"
+--8<-- "example/si_constants.cpp:42:"
 ```
 
-The main part of the example prints all of the SI-defining constants. While analyzing the output of
-this program (provided below), we can easily notice that a direct printing of the quantity provides
-just a value `1` with a proper constant symbol. This is the main power of the
-[Faster-than-lightspeed Constants](../framework_basics/faster_than_lightspeed_constants.md) feature.
-Only after we explicitly convert the unit of a quantity to proper SI units we get an actual numeric
-value of the constant.
+While analyzing the output of this program (provided below), we can easily notice that a direct
+printing of the quantity provides just a value `1` with a proper constant symbol. This is the main
+power of the [Faster-than-lightspeed Constants](../framework_basics/faster_than_lightspeed_constants.md)
+feature. Only after we explicitly convert the unit of a quantity to proper SI units we get an
+actual numeric value of the constant.
 
 ```text
 The seven defining constants of the SI and the seven corresponding units they define:

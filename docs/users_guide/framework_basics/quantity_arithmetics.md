@@ -5,11 +5,11 @@
 If we think about it, the `quantity` class template is just a "smart" numeric wrapper. It exposes
 properly constrained set of arithmetic operations on one or two operands.
 
-!!! important
+!!! important "Important: `quantity` propagates the underlying interface"
 
     Every single arithmetic operator is exposed by the `quantity` class template only if
-    the underlying representation type provides it as well and its implementation has proper
-    semantics (e.g. returns a reasonable type).
+    the underlying representation type provides it as well, and when its implementation has proper
+    semantics (e.g., returns a reasonable type).
 
 For example, in the following code, `-a` will compile only if `MyInt` exposes such an operation
 as well:
@@ -22,10 +22,10 @@ quantity b = -a;
 Assuming that:
 
 - `q` is our quantity,
-- `qq` is a quantity implicitly convertible to `q`,
-- `q2` is any other quantity,
-- `kind` is a [quantity of the same kind](systems_of_quantities.md#quantities-of-the-same-kind) as `q`,
-- `one` is a [quantity of `dimension_one` with the unit `one`](dimensionless_quantities.md),
+- `qi` is a quantity implicitly convertible to `q`,
+- `qk` is a [quantity of the same kind](systems_of_quantities.md#quantities-of-the-same-kind) as `q`,
+- `q1` is a [quantity of `dimension_one` with the unit `one`](dimensionless_quantities.md),
+- `qq` is any other quantity,
 - `number` is a value of a type "compatible" with `q`'s representation type,
 
 here is the list of all the supported operators:
@@ -38,26 +38,26 @@ here is the list of all the supported operators:
     - `--q`
     - `q--`
 - compound assignment:
-    - `q += qq`
-    - `q -= qq`
-    - `q %= qq`
+    - `q += qi`
+    - `q -= qi`
+    - `q %= qi`
     - `q *= number`
-    - `q *= one`
+    - `q *= q1`
     - `q /= number`
-    - `q /= one`
+    - `q /= q1`
 - binary:
-    - `q + kind`
-    - `q - kind`
-    - `q % kind`
-    - `q * q2`
+    - `q + qk`
+    - `q - qk`
+    - `q % qk`
+    - `q * qq`
     - `q * number`
     - `number * q`
-    - `q / q2`
+    - `q / qq`
     - `q / number`
     - `number / q`
 - ordering and comparison:
-    - `q == kind`
-    - `q <=> kind`
+    - `q == qk`
+    - `q <=> qk`
 
 As we can see, there are plenty of operations one can do on a value of a `quantity` type. As most
 of them are obvious, in the following chapters, we will discuss only the most important or non-trivial
@@ -89,26 +89,27 @@ static_assert(isq::radius(1 * m) - 0.5 * m == isq::radius(0.5 * m));
 
 !!! note
 
-    Please note that for the compound assignment operators, both arguments have to either be of
-    the same type or the RHS has to be implicitly convertible to the LHS, as the type of
-    LHS is always the result of such an operation:
+    Please note that for the compound assignment operators, we always need to end up with the
+    left-hand-side argument type:
 
     ```cpp
     static_assert((1 * m += 1 * km) == 1001 * m);
+    static_assert((isq::length(1 * m) += isq::height(1 * m)) == isq::length(1 * m));
     static_assert((isq::height(1.5 * m) -= 1 * m) == isq::height(0.5 * m));
     ```
 
-    If we break those rules, the following code will not compile:
+    If we will break typical library's convertibility rules, the following code will not compile:
 
     ```cpp
-    static_assert((1 * m -= 0.5 * m) == 0.5 * m);                       // Compile-time error(1)
-    static_assert((1 * km += 1 * m) == 1001 * m);                       // Compile-time error(2)
-    static_assert((isq::height(1 * m) += isq::length(1 * m)) == 2 * m); // Compile-time error(3)
+    quantity q1 = 1 * m -= 0.5 * m;                         // Compile-time error(1)
+    quantity q2 = 1 * km += 1 * m;                          // Compile-time error(2)
+    quantity q3 = isq::height(1 * m) += isq::length(1 * m); // Compile-time error(3)
     ```
 
-    1. Floating-point to integral representation type is [considered narrowing](value_conversions.md).
-    2. Conversion of quantity with integral representation type from a unit of a higher resolution to the one
-       with a lower resolution is [considered narrowing](value_conversions.md).
+    1. Conversion of the floating-point to integral representation type is
+       [considered narrowing](value_conversions.md).
+    2. Conversion of quantity with integral representation type from a unit of a higher resolution
+       to the one with a lower resolution is [considered narrowing](value_conversions.md).
     3. Conversion from a more generic quantity type to a more specific one is
        [considered unsafe](simple_and_typed_quantities.md#quantity_cast-to-force-unsafe-conversions).
 
@@ -124,15 +125,15 @@ static_assert(isq::height(3 * m) * 0.5 == isq::height(1.5 * m));
 
 !!! note
 
-    Unless we use a compound assignment operator, in which case truncating operations are again not allowed:
+    Unless we use a compound assignment operator, in which case we always have to result with
+    the type of the left-hand-side argument. This, together with the fact that this library
+    tries to prevent truncation of a quantity value means, that the following does not compile:
 
     ```cpp
-    static_assert((isq::height(3 * m) *= 0.5) == isq::height(1.5 * m)); // Compile-time error(1)
+    quantity q = isq::height(3 * m) *= 0.5; // Compile-time error
     ```
 
-    1. Floating-point to integral representation type is [considered narrowing](value_conversions.md).
-
-However, suppose we multiply or divide quantities of the same or different types, or we divide a raw
+However, suppose we multiply or divide quantities of the same or different types or we divide a raw
 number by a quantity. In that case, we most probably will end up in a quantity of yet another type:
 
 ```cpp
@@ -166,10 +167,10 @@ dimensionless kind.
 2. The resulting quantity of the LHS is `0 * dimensionless[h / min]`. To be consistent with the division
 of different quantity types, we do not convert quantity values to a common unit before the division.
 
-!!! important "Beware of integral division"
+!!! important "Important: Beware of integral division"
 
     The physical units library can't do any runtime branching logic for the division operator.
-    All logic has to be done at compile-time when the actual values are not known, and the quantity types
+    All logic must be done at compile-time when the actual values are unknown, and the quantity types
     can't change at runtime.
 
     If we expect `120 * km / (2 * h)` to return `60 km / h`, we have to agree with the fact that
@@ -183,7 +184,7 @@ of different quantity types, we do not convert quantity values to a common unit 
 
 ## Modulo
 
-Now that we know how addition, subtraction, multiplication, and division work, it is time to talk about
+Now that we know how addition, subtraction, multiplication, and division work, it is time to discuss
 modulo. What would we expect to be returned from the following quantity equation?
 
 ```cpp
@@ -278,7 +279,7 @@ static_assert(1 * h % (59 * min) == 1 * min);
 ## Comparison against zero
 
 In our code, we often want to compare the value of a quantity against zero. For example, we do it
-every time when we want to ensure that we deal with a non-zero or positive value.
+every time we want to ensure that we deal with a non-zero or positive value.
 
 We could implement such checks in the following way:
 
@@ -287,7 +288,7 @@ if (q1 / q2 != 0 * m / s)
   // ...
 ```
 
-The above would work (assuming we are dealing with the quantity of speed), but could be suboptimal
+The above would work (assuming we are dealing with the quantity of speed) but could be suboptimal
 if the result of `q1 / q2` is not expressed in `m / s`. To eliminate the need for conversion, we
 need to write:
 
@@ -323,26 +324,27 @@ if (is_neq_zero(q1 / q2))
 
     Those functions will work with any type `T` that exposes `zero()` member function returning
     something comparable to `T`. Thanks to that, we can use them not only with quantities but also
-    with [quantity points](the_affine_space.md#quantity_point),
-    [`std::chrono::duration`](https://en.cppreference.com/w/cpp/chrono/duration) or any other type
-    that exposes such an interface.
+    with [`std::chrono::duration`](https://en.cppreference.com/w/cpp/chrono/duration) or any other
+    type that exposes such an interface.
 
 
 ## Other maths
 
 This chapter scopes only on the `quantity` type's operators. However, there are many named math
-functions provided in the _mp-units/math.h_ header file. Among others, we can find there
-the following:
+functions taking quantities as arguments. Those can be found in the _mp-units/math.h_ header file.
+Among others, we can find there the following:
 
-- `pow()`, `sqrt()`, and `cbrt()`,
+- `pow()`, `sqrt()`, `cbrt()`,
 - `exp()`,
 - `abs()`,
 - `epsilon()`,
+- `fma()`, `fmod()`, `remainder()`,
+- `isfinite()`, `isinf()`, `isnan()`,
 - `floor()`, `ceil()`, `round()`,
 - `inverse()`,
 - `hypot()`,
 - `sin()`, `cos()`, `tan()`,
-- `asin()`, `acos()`, `atan()`.
+- `asin()`, `acos()`, `atan()`, `atan2()`.
 
 In the library, we can also find _mp-units/random.h_ header file with all the pseudo-random number
-generators.
+generators working on quantity types.

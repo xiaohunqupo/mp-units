@@ -22,12 +22,23 @@
 
 #pragma once
 
-#include <gsl/gsl-lite.hpp>
-#include <mp-units/bits/external/hacks.h>
-#include <mp-units/bits/fmt.h>
-#include <mp-units/customization_points.h>
+#include <mp-units/bits/hacks.h>
+#include <mp-units/compat_macros.h>
+#include <mp-units/ext/contracts.h>
+#include <mp-units/ext/format.h>
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
+#include <compare>  // IWYU pragma: export
 #include <ostream>
 #include <utility>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units.core;
+#else
+#include <mp-units/bits/fmt.h>
+#include <mp-units/framework/customization_points.h>
+#endif
 
 inline constexpr struct validated_tag {
 } validated;
@@ -44,13 +55,13 @@ public:
     requires std::copyable<T>
       : value_(value)
   {
-    gsl_Expects(validate(value_));
+    MP_UNITS_EXPECTS(validate(value_));
   }
 
   constexpr explicit validated_type(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>) :
       value_(std::move(value))
   {
-    gsl_Expects(validate(value_));
+    MP_UNITS_EXPECTS(validate(value_));
   }
 
   constexpr validated_type(const T& value, validated_tag) noexcept(std::is_nothrow_copy_constructible_v<T>)
@@ -75,12 +86,14 @@ public:
 
 #else
 
+  // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
   constexpr explicit(false) operator T() const& noexcept(std::is_nothrow_copy_constructible_v<T>)
     requires std::copyable<T>
   {
     return value_;
   }
 
+  // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
   constexpr explicit(false) operator T() && noexcept(std::is_nothrow_move_constructible_v<T>)
   {
     return std::move(value_);
@@ -88,25 +101,17 @@ public:
 
 #endif
 
-  constexpr T& value() & noexcept = delete;
-  constexpr const T& value() const& noexcept { return value_; }
-  constexpr T&& value() && noexcept { return std::move(value_); }
-  constexpr const T&& value() const&& noexcept { return std::move(value_); }
+  [[nodiscard]] constexpr const T& value() const& noexcept { return value_; }
+  [[nodiscard]] constexpr T&& value() && noexcept { return std::move(value_); }
+  [[nodiscard]] constexpr const T&& value() const&& noexcept { return std::move(value_); }
 
-  bool operator==(const validated_type&) const
+  [[nodiscard]] bool operator==(const validated_type&) const
     requires std::equality_comparable<T>
   = default;
-  auto operator<=>(const validated_type&) const
+  [[nodiscard]] auto operator<=>(const validated_type&) const
     requires std::three_way_comparable<T>
   = default;
 };
-
-template<typename T, typename Validator>
-inline constexpr bool mp_units::is_scalar<validated_type<T, Validator>> = mp_units::is_scalar<T>;
-
-template<typename T, typename Validator>
-inline constexpr bool mp_units::treat_as_floating_point<validated_type<T, Validator>> =
-  mp_units::treat_as_floating_point<T>;
 
 
 template<typename CharT, typename Traits, typename T, typename Validator>
@@ -118,11 +123,11 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
 }
 
 
-template<typename T, typename Validator>
-struct MP_UNITS_STD_FMT::formatter<validated_type<T, Validator>> : formatter<T> {
+template<typename T, typename Validator, typename Char>
+struct MP_UNITS_STD_FMT::formatter<validated_type<T, Validator>, Char> : formatter<T, Char> {
   template<typename FormatContext>
-  auto format(const validated_type<T, Validator>& v, FormatContext& ctx)
+  auto format(const validated_type<T, Validator>& val, FormatContext& ctx) const -> decltype(ctx.out())
   {
-    return formatter<T>::format(v.value(), ctx);
+    return formatter<T, Char>::format(val.value(), ctx);
   }
 };

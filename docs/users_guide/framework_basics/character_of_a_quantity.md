@@ -18,8 +18,8 @@
 Such distinction is important because each quantity character represents different properties
 and allows different operations to be done on its quantities.
 
-For example, imagine a physical units library that allows the creation of a `speed` quantity from both
-`length / time` and `length * time`. It wouldn't be too safe to use such a product, right?
+For example, imagine a physical units library that allows the creation of a $speed$ quantity from both
+$length / time$ and $length * time$. It wouldn't be too safe to use such a product, right?
 
 Now we have to realize that both of the above operations (multiplication and division) are not even
 mathematically defined for linear algebra types such as vectors or tensors. On the other hand, two vectors
@@ -34,36 +34,36 @@ results from both cases. This simply can't work.
 While defining quantities ISO 80000 explicitly mentions when a specific quantity has a vector or tensor
 character. Here are some examples:
 
-| Quantity               |  Character   |                 Quantity Equation                 |
-|------------------------|:------------:|:-------------------------------------------------:|
-| `duration`             |    scalar    |                 _{base quantity}_                 |
-| `mass`                 |    scalar    |                 _{base quantity}_                 |
-| `length`               |    scalar    |                 _{base quantity}_                 |
-| `path_length`          |    scalar    |                 _{base quantity}_                 |
-| `radius`               |    scalar    |                 _{base quantity}_                 |
-| `position_vector`      |  **vector**  |                 _{base quantity}_                 |
-| `velocity`             |  **vector**  |           `position_vector / duration`            |
-| `acceleration`         |  **vector**  |               `velocity / duration`               |
-| `force`                |  **vector**  |               `mass * acceleration`               |
-| `power`                |    scalar    |                `force ⋅ velocity`                 |
-| `moment_of_force`      |  **vector**  |             `position_vector × force`             |
-| `torque`               |    scalar    |         `moment_of_force ⋅ {unit-vector}`         |
-| `surface_tension`      |    scalar    |                `|force| / length`                 |
-| `angular_displacement` |    scalar    |              `path_length / radius`               |
-| `angular_velocity`     |  **vector**  | `angular_displacement / duration * {unit-vector}` |
-| `momentum`             |  **vector**  |                 `mass * velocity`                 |
-| `angular_momentum`     |  **vector**  |           `position_vector × momentum`            |
-| `moment_of_inertia`    | **_tensor_** |       `angular_momentum ⊗ angular_velocity`       |
+| Quantity                 |  Character   |                    Quantity Equation                    |
+|--------------------------|:------------:|:-------------------------------------------------------:|
+| $duration$               |    scalar    |                    _{base quantity}_                    |
+| $mass$                   |    scalar    |                    _{base quantity}_                    |
+| $length$                 |    scalar    |                    _{base quantity}_                    |
+| $path\; length$          |    scalar    |                    _{base quantity}_                    |
+| $radius$                 |    scalar    |                    _{base quantity}_                    |
+| $position\; vector$      |  **vector**  |                    _{base quantity}_                    |
+| $velocity$               |  **vector**  |             $position\; vector / duration$              |
+| $acceleration$           |  **vector**  |                  $velocity / duration$                  |
+| $force$                  |  **vector**  |                  $mass * acceleration$                  |
+| $power$                  |    scalar    |                 $force \cdot velocity$                  |
+| $moment\; of\; force$    |  **vector**  |            $position\; vector \times force$             |
+| $torque$                 |    scalar    |      $moment\; of\; force \cdot \{unit\; vector\}$      |
+| $surface\; tension$      |    scalar    |             $\lvert force \rvert / length$              |
+| $angular\; displacement$ |    scalar    |                $path\; length / radius$                 |
+| $angular\; velocity$     |  **vector**  | $angular\; displacement / duration * \{unit\; vector\}$ |
+| $momentum$               |  **vector**  |                    $mass * velocity$                    |
+| $angular\; momentum$     |  **vector**  |           $position\; vector \times momentum$           |
+| $moment\; of\; inertia$  | **_tensor_** |     $angular\; momentum \otimes angular\; velocity$     |
 
 In the above equations:
 
-- `a * b` - regular multiplication where one of the arguments has to be scalar
-- `a / b` - regular division where the divisor has to be scalar
-- `a ⋅ b` - dot product of two vectors
-- `a × b` - cross product of two vectors
-- `|a|` - magnitude of a vector
-- `{unit-vector}` - a special vector with the magnitude of `1`
-- `a ⊗ b` - tensor product of two vectors or tensors
+- $a * b$ - regular multiplication where one of the arguments has to be scalar
+- $a / b$ - regular division where the divisor has to be scalar
+- $a \cdot b$ - dot product of two vectors
+- $a \times b$ - cross product of two vectors
+- $\lvert a \rvert$ - magnitude of a vector
+- $\{unit\; vector\}$ - a special vector with the magnitude of $1$
+- $a \otimes b$ - tensor product of two vectors or tensors
 
 !!! note
 
@@ -97,22 +97,22 @@ enumeration can be appended to the `quantity_spec` describing such a quantity ty
 === "C++23"
 
     ```cpp
-    inline constexpr struct position_vector : quantity_spec<length, quantity_character::vector> {} position_vector;
-    inline constexpr struct displacement : quantity_spec<length, quantity_character::vector> {} displacement;
+    inline constexpr struct displacement final : quantity_spec<length, quantity_character::vector> {} displacement;
+    inline constexpr struct position_vector final : quantity_spec<displacement> {} position_vector;
     ```
 
 === "C++20"
 
     ```cpp
-    inline constexpr struct position_vector : quantity_spec<position_vector, length, quantity_character::vector> {} position_vector;
-    inline constexpr struct displacement : quantity_spec<displacement, length, quantity_character::vector> {} displacement;
+    inline constexpr struct displacement final : quantity_spec<displacement, length, quantity_character::vector> {} displacement;
+    inline constexpr struct position_vector final : quantity_spec<position_vector, displacement> {} position_vector;
     ```
 
 === "Portable"
 
     ```cpp
-    QUANTITY_SPEC(position_vector, length, quantity_character::vector);
     QUANTITY_SPEC(displacement, length, quantity_character::vector);
+    QUANTITY_SPEC(position_vector, displacement);
     ```
 
 With the above, all the quantities derived from `position_vector` or `displacement` will have a correct
@@ -126,19 +126,19 @@ character override is needed):
 === "C++23"
 
     ```cpp
-    inline constexpr struct velocity : quantity_spec<speed, position_vector / duration> {} velocity;
+    inline constexpr struct velocity final : quantity_spec<speed, displacement / duration> {} velocity;
     ```
 
 === "C++20"
 
     ```cpp
-    inline constexpr struct velocity : quantity_spec<velocity, speed, position_vector / duration> {} velocity;
+    inline constexpr struct velocity final : quantity_spec<velocity, speed, displacement / duration> {} velocity;
     ```
 
 === "Portable"
 
     ```cpp
-    QUANTITY_SPEC(velocity, speed, position_vector / duration);
+    QUANTITY_SPEC(velocity, speed, displacement / duration);
     ```
 
 
@@ -148,11 +148,11 @@ As we remember, the `quantity` class template is defined as follows:
 
 ```cpp
 template<Reference auto R,
-         RepresentationOf<get_quantity_spec(R).character> Rep = double>
+         RepresentationOf<get_quantity_spec(R)> Rep = double>
 class quantity;
 ```
 
-The second template parameter is constrained with a [`RepresentationOf`](basic_concepts.md#RepresentationOf)
+The second template parameter is constrained with a [`RepresentationOf`](concepts.md#RepresentationOf)
 concept that checks if the provided representation type satisfies the requirements for the character
 associated with this quantity type.
 
@@ -169,7 +169,7 @@ associated with this quantity type.
     as a vector or tensor quantity representation type.
 
 To enable the usage of a user-defined type as a representation type for vector or tensor quantities,
-you need to provide a partial specialization of `is_vector` or `is_tensor` customization points.
+we need to provide a partial specialization of `is_vector` or `is_tensor` customization points.
 
 For example, here is how it can be done for the [P1385](https://wg21.link/p1385) types:
 
@@ -179,7 +179,7 @@ For example, here is how it can be done for the [P1385](https://wg21.link/p1385)
 using la_vector = STD_LA::fixed_size_column_vector<double, 3>;
 
 template<>
-inline constexpr bool mp_units::is_vector<la_vector> = true;
+constexpr bool mp_units::is_vector<la_vector> = true;
 ```
 
 With the above, we can use `la_vector` as a representation type for our quantity:
@@ -191,10 +191,10 @@ Quantity auto q = la_vector{1, 2, 3} * isq::velocity[m / s];
 In case there is an ambiguity of `operator*` between **mp-units** and a linear algebra library, we can
 either:
 
-- use `make_quantity` factory function
+- use two-parameter constructor
 
     ```cpp
-    Quantity auto q = make_quantity<isq::velocity[m / s]>(la_vector{1, 2, 3});
+    Quantity auto q = quantity{la_vector{1, 2, 3}, isq::velocity[m / s]};
     ```
 
 - provide a dedicated overload of `operator*` that will resolve the ambiguity and wrap the above
@@ -203,7 +203,7 @@ either:
     template<Reference R>
     Quantity auto operator*(la_vector rep, R)
     {
-      return make_quantity<R{}>(rep);
+      return quantity{rep, R{}};
     }
     ```
 
@@ -223,17 +223,17 @@ either:
 
 ## Hacking the character
 
-Sometimes you want to use a vector quantity, but you don't care about its direction. For example,
-the standard gravity acceleration constant always points down, so you might not care about this
-in a particular scenario. In such a case, you may want to "hack" the library to allow scalar types
+Sometimes we want to use a vector quantity, but we don't care about its direction. For example,
+the standard gravity acceleration constant always points down, so we might not care about this
+in a particular scenario. In such a case, we may want to "hack" the library to allow scalar types
 to be used as a representation type for scalar quantities.
 
-For example, you can do the following:
+For example, we can do the following:
 
 ```cpp
 template<class T>
   requires mp_units::is_scalar<T>
-inline constexpr bool mp_units::is_vector<T> = true;
+constexpr bool mp_units::is_vector<T> = true;
 ```
 
 which says that every type that can be used as a scalar representation is also allowed for vector

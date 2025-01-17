@@ -124,9 +124,10 @@
       not of the same [kind](#kind).
         - For example, joule per kelvin and J/K are respectively the name and symbol of both a
           measurement unit of heat capacity and a measurement unit of entropy, which are generally
-          not considered to be [quantities of the same kind](#kind). However, in some cases special
-          measurement unit names are restricted to be used with [quantities](#quantity) of specific
-          [kind](#kind) only. For example, the measurement unit ‘second to the power minus one’
+          not considered to be [quantities of the same kind](#kind).
+    - However, in some cases special measurement unit names are restricted to be used with
+      [quantities](#quantity) of specific [kind](#kind) only.
+        - For example, the measurement unit ‘second to the power minus one’
           ($\mathsf{1/s}$) is called hertz ($\mathsf{Hz}$) when used for frequencies and
           becquerel ($\mathsf{Bq}$) when used for activities of radionuclides. As another example,
           the joule ($\mathsf{J}$) is used as a unit of energy, but never as a unit of moment of
@@ -269,7 +270,7 @@
 [`derived dimension`](#derived-dimension){ #derived-dimension }
 
 :   - A [dimension](#dimension) of a [derived quantity](#derived-quantity).
-    - Implemented as an expression template being the result of the
+    - Implemented as a symbolic expression being the result of the
       [dimension equation](#dimension-equation) on [base dimensions](#base-dimension).
 
 [`dimension equation`](#dimension-equation){ #dimension-equation }
@@ -332,6 +333,20 @@
     - In the **mp-units** library, a reference describes all the required meta-information
       associated with a specific quantity ([quantity specification](#quantity_spec) and
       [unit](#unit)).
+
+[`canonical representation of a unit, canonical unit`](#canonical-unit){ #canonical-unit }
+
+:   - A canonical representation of a unit consists of:
+        - a reference unit being the result of extraction of all the intermediate
+          [derived units](#derived-unit),
+        - a magnitude being a product of all the prefixes and magnitudes of extracted scaled units.
+    - All units having the same canonical unit are deemed equal.
+    - All units having the same reference unit are convertible
+      (their magnitude may differ and is used during conversion).
+
+[`reference unit`](#reference-unit){ #reference-unit }
+
+:   See [canonical representation of a unit](#canonical-unit)
 
 [`absolute quantity point origin`, `absolute point origin`](#absolute-point-origin){ #absolute-point-origin }
 

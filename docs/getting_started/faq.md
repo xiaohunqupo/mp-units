@@ -11,7 +11,9 @@ This is how the BIPM defines it in the [SI Brochure](../appendix/references.md#S
 Many reasons make UDLs a poor choice for a physical units library:
 
 1. UDLs work only with literals (compile-time known values). Our observation is that besides
-   the unit tests, there are few compile-time known constants used in the production code.
+   the unit tests, there are only a few compile-time known quantity values used in the production
+   code. Please note that for physical constants, we recommend using
+   [Faster-than-lightspeed Constants](../users_guide/framework_basics/faster_than_lightspeed_constants.md).
 2. Typical implementations of UDLs tend to always use the widest representation type available.
    In the case of `std::chrono::duration`, the following is true:
 
@@ -23,32 +25,37 @@ Many reasons make UDLs a poor choice for a physical units library:
     static_assert(std::is_same_v<decltype(d2)::rep, long double>);
     ```
 
-3. While increasing the coverage for the library, we learned that many unit symbols conflict  with
+   When such UDL is intermixed in arithmetics with any quantity type of a shorter representation
+   type, it will always expand it to the longest one. In other words, such long type spreads until
+   all types use it everywhere.
+
+3. While increasing the coverage for the library, we learned that many unit symbols conflict with
    built-in types or numeric extensions. A few of those are: `F` (farad), `J` (joule), `W` (watt),
-   `K` (kelvin), `d` (day), `l` or `L` (litre), `erg`, `ergps`. For a while for those we used `_` prefix
-   to make the library work at all, but at some point, we had to unify the naming, and we came up with `_q_`
-   prefix, which resulted in creating a quantity of a provided unit. So in case the library is
-   standardized, all quantities would be created with UDLs having `q_` prefix (e.g. `42q_s`)
-   which is not that nice anymore.
+   `K` (kelvin), `d` (day), `l` or `L` (litre), `erg`, `ergps`. Usage of the `_` prefix would make
+   it work for **mp-units**, but in case the library is standardized, those naming collisions would
+   be a big issue. This is why we came up with the `_q_` prefix that would become `q_` after
+   standardization (e.g., `42q_s`), which is not that nice anymore.
 
 4. UDLs with the same identifiers defined in different namespace can't be disambiguated in the C++
    language. If both SI and CGS systems define `_q_s` UDL for a second unit, then it would not be possible
-   to specify which one to use in case both namespaces are "imported".
+   to specify which one to use in case both namespaces are "imported" with using directives.
 
 5. Another bad property of UDLs is that they do not compose. A coherent unit of angular momentum would
-   have a UDL specified as `_q_kg_m2_per_s`. Now imagine that you want to make every possible user happy.
-   How many variations of that unit would you predefine for differently scaled versions of unit ingredients?
+   have a UDL specified as `_q_kg_m2_per_s`. Now imagine that we want to make every possible user happy.
+   How many variations of that unit would we predefine for differently scaled versions of all unit
+   ingredients?
 
-6. UDLs are also really expensive to define and specify. For each unit, we need two definitions. One for
-   integral and another one for floating-point representation. Before the V2 framework, the coherent unit of
-   angular momentum was defined as:
+6. UDLs are also really expensive to define and specify. Typically, for each unit, we need two
+   definitions. One for integral and another one for floating-point representation. Before the
+   V2 framework, the coherent unit of angular momentum was defined as:
 
     ```cpp
     constexpr auto operator"" _q_kg_m2_per_s(unsigned long long l)
     {
-      gsl_ExpectsAudit(std::in_range<std::int64_t>(l));
+      gsl_Expects(std::in_range<std::int64_t>(l));
       return angular_momentum<kilogram_metre_sq_per_second, std::int64_t>(static_cast<std::int64_t>(l));
     }
+
     constexpr auto operator"" _q_kg_m2_per_s(long double l)
     {
       return angular_momentum<kilogram_metre_sq_per_second, long double>(l);
@@ -58,9 +65,9 @@ Many reasons make UDLs a poor choice for a physical units library:
 
 ## Why can't I create a quantity by passing a number to a constructor?
 
-A quantity class template in the **mp-units** library has no publicly available constructor taking a raw value.
-Such support is provided by the `std::chrono::duration` and was pointed out to us as a red flag safety issue
-by a few parties already.
+A quantity class template in the **mp-units** library has no publicly available constructor taking
+a raw value. Such support is provided by the `std::chrono::duration` and was pointed out to us as
+a red flag safety issue by a few parties already.
 
 Consider the following structure and a code using it:
 
@@ -76,7 +83,7 @@ X x;
 x.vec.emplace_back(42);
 ```
 
-Everything works fine for years until at some point someone changes the structure to:
+Everything works fine for years until, at some point, someone changes the structure to:
 
 ```cpp
 struct X {
@@ -85,11 +92,18 @@ struct X {
 };
 ```
 
-The code continues to compile just fine but all the calculations are off now. This is why we decided to not
-follow this path.
+The code continues to compile just fine, but all the calculations are off now. This is why we decided
+to not follow this path.
 
-In the **mp-units** library, both a number and a unit have to always be explicitly provided in order to
-form a quantity.
+In the **mp-units** library, both a number and a unit have to always be explicitly provided in order
+to form a quantity.
+
+!!! note
+
+    The same applies to the construction of `quantity_point` using an explicit point origin.
+    To prevent similar safety issues during maintenance, the initialization always requires
+    providing both a `quantity` and a [`PointOrigin`](../users_guide/framework_basics/concepts.md#PointOrigin)
+    that we use as a reference point.
 
 
 ## Why a dimensionless quantity is not just a fundamental arithmetic type?
@@ -98,7 +112,7 @@ In the initial design of this library, the resulting type of division of two qua
 common representation type:
 
 ```cpp
-static_assert(std::is_same_v<decltype(10 * km / (5 * km)), std::int64_t>);
+static_assert(std::is_same_v<decltype(10 * km / (5 * km)), int>);
 ```
 
 First of all, this was consistent with
@@ -114,8 +128,8 @@ it might be either a quantity or a fundamental type. If we want to raise such a 
 must use `units::pow` or `std::pow` depending on the resulting type. Those are only a few issues related
 to such an approach.
 
-Moreover, suppose you divide quantities of the same dimension but with units of significantly different
-magnitudes. In that case, you may end up with a really small or a huge floating-point value, which may result
+Moreover, suppose we divide quantities of the same dimension but with units of significantly different
+magnitudes. In that case, we may end up with a really small or a huge floating-point value, which may result
 in losing lots of precision. Returning a dimensionless quantity from such cases allows us to benefit from
 all the properties of scaled units and is consistent with the rest of the library.
 
@@ -123,6 +137,71 @@ all the properties of scaled units and is consistent with the rest of the librar
 
     More information on the current design can be found in
     [the Dimensionless Quantities chapter](../users_guide/framework_basics/dimensionless_quantities.md).
+
+
+## Why derived units order is not preserved from the multiplication?
+
+It might be surprising, but the quantities and units multiplication order does not impact the order
+of components in the derived unit. Let's try the following example:
+
+```cpp
+std::println("{}", 42 * kW * h);
+constexpr auto kWh = kW * h;
+std::println("{}", 42 * kWh);
+```
+
+The above prints:
+
+```text
+42 h kW
+42 h kW
+```
+
+Some users could expect to see `42 kWh` or `42 kW h` in the output. It is not the case and for
+a very good reason. As stated in
+[Simplifying the resulting symbolic expressions](../users_guide/framework_basics/interface_introduction.md#simplifying-the-resulting-symbolic-expressions),
+to be able to reason about and simplify units, the library needs to order them in an appropriate
+order.
+
+Maybe this default order could be improved a bit, but according to international standards,
+there is no generic ordering rule. Various quantities use different, often domain-specific,
+ordering of derived unit components.
+
+Let's see what [SI](../appendix/references.md#SIBrochure) says here:
+
+| Derived quantity           | Symbol | Derived unit expressed in terms of base units |
+|----------------------------|:------:|:---------------------------------------------:|
+| _electric field strength_  | V m⁻¹  |                 kg m s⁻³ A⁻¹                  |
+| _electric charge density_  | C m⁻³  |                    A s m⁻³                    |
+| _exposure (x- and γ-rays)_ | C kg⁻¹ |                   A s kg⁻¹                    |
+
+However, there is a workaround. A user can define its own named unit for a derived unit and provide
+the custom symbol text that suits the project's requirements. For example, the above case could be
+addressed with:
+
+```cpp
+inline constexpr struct kilowatt_hour final : named_unit<"kWh", kW * h> {} kilowatt_hour;
+inline constexpr auto kWh = kilowatt_hour;
+```
+
+With the above, we can refactor the above code to:
+
+```cpp
+std::println("{}", 42 * kWh);
+std::println("{}", (42 * kW * h).in(kWh));
+```
+
+Both lines will produce an expected "42 kWh" unit in the output.
+
+!!! important
+
+    Please note that this makes the entire "kWh" a single, indivisible entity that is not subject
+    to simplification rules. This means that `42 * kWh / (2 * h)` will result with `21 kWh/h`
+    rather than `21 kW`. To get the latter, the user needs to explicitly provide a new derived unit:
+
+    ```cpp
+    std::println("{}", (42 * kWh / (2 * h)).in(kW));
+    ```
 
 
 ## Why do the identifiers for concepts in the library use `CamelCase`?
@@ -145,28 +224,29 @@ code.
 
 !!! note
 
-    In case you have a good idea on how to rename [existing concepts](../users_guide/framework_basics/basic_concepts.md)
-    to the `standard_case`, please let us know in the associated [GitHub Issue]().
+    In case you have a good idea of how to rename
+    [existing concepts](../users_guide/framework_basics/concepts.md) to the `standard_case`,
+    please let us know in the associated [GitHub Issue](https://github.com/mpusz/mp-units/issues/93).
 
 
-## Why Unicode quantity symbols are used by default instead of ASCII-only characters?
+## Why UTF-8 quantity symbols are used by default instead of portable characters?
 
 Both C++ and [ISO 80000](../appendix/references.md#ISO80000) are standardized by the ISO.
 [ISO 80000](../appendix/references.md#ISO80000) and the [SI](../appendix/references.md#SIBrochure)
-standards specify Unicode symbols as the official unit names for some quantities
+standards specify UTF-8 symbols as the official unit names for some quantities
 (e.g. `Ω` symbol for the resistance quantity).
-As **mp-units** library will be proposed for standardization as a part of the C++ Standard Library
+As the **mp-units** library will be proposed for standardization as a part of the C++ Standard Library
 we have to obey the rules and be consistent with ISO specifications.
 
 !!! note
 
     We do understand engineering reality and the constraints of some environments. This is why the library
-    has the option of ASCII-only Quantity Symbols.
+    has the option of [Portable Quantity Symbols](../users_guide/framework_basics/text_output.md#unit_symbol_formatting).
 
 
-## Why don't you have CMake options to disable the building of tests and examples?
+## Why don't we have CMake options to disable the building of tests and examples?
 
-Over time many people provided PRs proposing adding options to build tests and examples conditionally.
+Over time, many people provided PRs proposing adding options to build tests and examples conditionally.
 Here are a few examples:
 
 - [Add CMake options for disabling docs, examples and tests](https://github.com/mpusz/mp-units/pull/124)
@@ -186,7 +266,7 @@ project is not the best idea as it might cause a lot of harm if this project sto
 because of that.
 
 Last but not least, not having those options is on purpose. Top level _CMakeLists.txt_ file should only
-be used by **mp-units** developers and contributors as an entry point for project's development.
+be used by **mp-units** developers and contributors as an entry point for the project's development.
 We want to ensure that everyone will build **ALL** the code correctly before pushing a commit. Having
 such options would allow unintended issues to leak to PRs and CI.
 
@@ -199,5 +279,6 @@ This is why our projects have two entry points:
 
 !!! note
 
-    For more details on this please refer to the [CMake + Conan: 3 Years Later - Mateusz Pusz](https://youtu.be/mrSwJBJ-0z8?t=1931)
+    For more details on this please refer to the
+    [CMake + Conan: 3 Years Later - Mateusz Pusz](https://youtu.be/mrSwJBJ-0z8?t=1931)
     lecture that Mateusz Pusz provided at the C++Now 2021 conference.

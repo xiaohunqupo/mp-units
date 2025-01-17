@@ -20,18 +20,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#ifdef MP_UNITS_IMPORT_STD
+import std;
+#else
+#include <exception>
+#include <iostream>
+#endif
+#ifdef MP_UNITS_MODULES
+import mp_units;
+#else
 #include <mp-units/math.h>
 #include <mp-units/ostream.h>
 #include <mp-units/systems/isq/mechanics.h>
-#include <mp-units/systems/natural/natural.h>
-#include <mp-units/systems/si/constants.h>
-#include <mp-units/systems/si/unit_symbols.h>
-#include <exception>
-#include <iostream>
-
-template<class T>
-  requires mp_units::is_scalar<T>
-inline constexpr bool mp_units::is_vector<T> = true;
+#include <mp-units/systems/isq/space_and_time.h>
+#include <mp-units/systems/natural.h>
+#include <mp-units/systems/si.h>
+#endif
 
 namespace {
 
@@ -46,13 +50,13 @@ QuantityOf<isq::mechanical_energy> auto total_energy(QuantityOf<isq::momentum> a
 void si_example()
 {
   using namespace mp_units::si::unit_symbols;
-  constexpr auto GeV = si::giga<si::electronvolt>;
-  constexpr QuantityOf<isq::speed> auto c = 1. * si::si2019::speed_of_light_in_vacuum;
-  auto c2 = pow<2>(c);
+  constexpr Unit auto GeV = si::giga<si::electronvolt>;
+  constexpr quantity c = 1. * si::si2019::speed_of_light_in_vacuum;
+  const quantity c2 = pow<2>(c);
 
-  const auto p1 = isq::momentum(4. * GeV / c);
+  const quantity p1 = isq::momentum(4. * GeV / c);
   const QuantityOf<isq::mass> auto m1 = 3. * GeV / c2;
-  const auto E = total_energy(p1, m1, c);
+  const quantity E = total_energy(p1, m1, c);
 
   std::cout << "\n*** SI units (c = " << c << " = " << c.in(si::metre / s) << ") ***\n";
 
@@ -61,18 +65,18 @@ void si_example()
             << "m = " << m1 << "\n"
             << "E = " << E << "\n";
 
-  const auto p2 = p1.in(GeV / (m / s));
-  const auto m2 = m1.in(GeV / pow<2>(m / s));
-  const auto E2 = total_energy(p2, m2, c).in(GeV);
+  const quantity p2 = p1.in(GeV / (m / s));
+  const quantity m2 = m1.in(GeV / pow<2>(m / s));
+  const quantity E2 = total_energy(p2, m2, c).in(GeV);
 
   std::cout << "\n[in `GeV`]\n"
             << "p = " << p2 << "\n"
             << "m = " << m2 << "\n"
             << "E = " << E2 << "\n";
 
-  const auto p3 = p1.in(kg * m / s);
-  const auto m3 = m1.in(kg);
-  const auto E3 = total_energy(p3, m3, c).in(J);
+  const quantity p3 = p1.in(kg * m / s);
+  const quantity m3 = m1.in(kg);
+  const quantity E3 = total_energy(p3, m3, c).in(J);
 
   std::cout << "\n[in SI base units]\n"
             << "p = " << p3 << "\n"
@@ -88,10 +92,10 @@ void natural_example()
   using namespace mp_units::natural;
   using namespace mp_units::natural::unit_symbols;
 
-  constexpr auto c = 1. * speed_of_light;
-  const auto p = 4. * momentum[GeV];
-  const auto m = 3. * mass[GeV];
-  const auto E = total_energy(p, m, c);
+  constexpr quantity c = 1. * speed_of_light;
+  const quantity p = 4. * momentum[GeV];
+  const quantity m = 3. * mass[GeV];
+  const quantity E = total_energy(p, m, c);
 
   std::cout << "\n*** Natural units (c = " << c << ") ***\n"
             << "p = " << p << "\n"
