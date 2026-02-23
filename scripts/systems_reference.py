@@ -120,6 +120,29 @@ class Prefix:
 
 
 @dataclass
+class Constant:
+    """Represents a physical constant definition (like 'speed_of_light_in_vacuum' or 'planck_constant')"""
+
+    name: str
+    symbol: str
+    unit_symbols: list = None  # List of unit_symbol names (e.g., ['π', 'h'])
+    definition: str = ""  # Value expression (e.g., "mag<299'792'458> * metre / second")
+    namespace: str = ""
+    file: str = ""
+    subnamespace: Optional[str] = None  # Relative subnamespace (e.g., "codata2022")
+    alias_target: Optional[str] = (
+        None  # If this is an alias, the name of the original entity
+    )
+    secondary_namespaces: list = (
+        None  # Namespaces where accessible via using declarations
+    )
+
+    def __post_init__(self):
+        if self.unit_symbols is None:
+            self.unit_symbols = []
+
+
+@dataclass
 class SystemInfo:
     """Information about a system (namespace-based)"""
 
@@ -130,6 +153,7 @@ class SystemInfo:
     units: List[Unit] = field(default_factory=list)
     point_origins: List[PointOrigin] = field(default_factory=list)
     prefixes: List[Prefix] = field(default_factory=list)
+    constants: List[Constant] = field(default_factory=list)
     inline_subnamespaces: Set[str] = field(
         default_factory=set
     )  # Track inline subnamespaces (e.g., "si2019", "codata2018")
@@ -252,8 +276,11 @@ class SystemsParser:
                     self._parse_units(
                         content, core_system, str(unit_path), namespace_to_search=None
                     )
-                    self._parse_unit_symbols(content, core_system)
+                    # Parse constants before aliases so aliases can find their targets
+                    self._parse_constants(content, core_system, str(unit_path))
                     self._parse_aliases(content, core_system, str(unit_path))
+                    # Parse unit_symbols after constants so constants can be matched
+                    self._parse_unit_symbols(content, core_system)
             except Exception as e:
                 print(f"Warning: Could not parse {unit_path}: {e}")
             # Add core.h as the public header (not unit.h which is internal)
@@ -336,15 +363,16 @@ class SystemsParser:
         # Parse content
         self._parse_dimensions(content, system, str(header_file))
         self._parse_quantities(content, system, str(header_file))
+        # Detect inline subnamespaces early so other parsers can use this information
+        self._detect_inline_subnamespaces(content, system)
+        self._parse_constants(content, system, str(header_file))  # Parse constants before units so using declarations can find them
         self._parse_units(content, system, str(header_file))
         self._parse_point_origins(content, system, str(header_file))
         self._parse_prefixes(content, system, str(header_file))
         self._parse_aliases(content, system, str(header_file))
         self._parse_using_declarations(content, system, str(header_file))
-        # Parse unit_symbols in the same pass
+        # Parse unit_symbols after inline namespace detection so it can match correctly
         self._parse_unit_symbols(content, system)
-        # Detect inline subnamespaces
-        self._detect_inline_subnamespaces(content, system)
 
     def _detect_inline_subnamespaces(self, content: str, system: SystemInfo):
         """Detect and store inline subnamespaces"""
@@ -466,9 +494,16 @@ class SystemsParser:
         return None
 
     def _get_nested_namespace(
-        self, content: str, match_pos: int, system_namespace: str
+        self, content: str, match_pos: int, system_namespace: str, include_inline: bool = False
     ) -> Optional[str]:
-        """Detect if a match is inside a nested namespace and return the nested namespace name"""
+        """Detect if a match is inside a nested namespace and return the nested namespace name
+        
+        Args:
+            content: The content to search
+            match_pos: Position of the match
+            system_namespace: The system namespace
+            include_inline: If True, also return inline namespaces. If False, skip them.
+        """
         before_match = content[:match_pos]
 
         # Namespaces that should NOT be treated as subnamespaces for display purposes
@@ -476,7 +511,6 @@ class SystemsParser:
             "mp_units",
             "unit_symbols",
             "non_si",
-            "si2019",
             system_namespace,
         }
 
@@ -497,13 +531,14 @@ class SystemsParser:
                 while namespace_stack and brace_depth <= namespace_stack[-1][1]:
                     namespace_stack.pop()
 
-            # Check for namespace declaration (but skip inline namespaces)
+            # Check for namespace declaration
             if before_match[i : i + 9] == "namespace":
                 # Check if this is an inline namespace (look backwards for "inline" keyword)
                 before_namespace = before_match[max(0, i - 20) : i]
                 is_inline = bool(re.search(r"\binline\s+$", before_namespace))
 
-                if not is_inline:
+                # Skip inline namespaces unless include_inline is True
+                if include_inline or not is_inline:
                     # Extract namespace name
                     rest = before_match[i + 9 :]
                     ns_match = re.match(r"\s+(\w+)\s*\{", rest)
@@ -940,8 +975,8 @@ class SystemsParser:
                 continue
 
             # This is importing into a subnamespace - document it there
-            # Build the full namespace for this subnamespace unit
-            unit_full_namespace = f"mp_units::{system.namespace}::{subns}"
+            # Build the full namespace for this subnamespace
+            entity_full_namespace = f"mp_units::{system.namespace}::{subns}"
 
             # Determine origin namespace - if it doesn't have system prefix, add it
             if "::" not in full_namespace:
@@ -951,17 +986,38 @@ class SystemsParser:
                 # Qualified name like "si::metre" - add mp_units prefix
                 origin_namespace = f"mp_units::{full_namespace}"
 
-            unit = Unit(
-                name=unit_name,
-                symbol=f"(imported from {full_namespace})",
-                definition=f"using {full_namespace}::{unit_name}",
-                namespace=unit_full_namespace,
-                origin_namespace=origin_namespace,
-                file=file,
-                is_alias=True,
-                subnamespace=subns,
-            )
-            system.units.append(unit)
+            # Check if this is a constant or a unit by searching in the origin namespace
+            is_constant = False
+            for const in system.constants:
+                # Check if this constant is from the origin namespace
+                if const.name == unit_name and const.namespace == origin_namespace:
+                    is_constant = True
+                    # Create an alias constant
+                    alias_constant = Constant(
+                        name=unit_name,
+                        symbol=const.symbol,
+                        definition=const.definition,
+                        namespace=entity_full_namespace,
+                        file=file,
+                        alias_target=f"{full_namespace}::{unit_name}",
+                        subnamespace=subns,
+                    )
+                    system.constants.append(alias_constant)
+                    break
+            
+            if not is_constant:
+                # Create a unit alias
+                unit = Unit(
+                    name=unit_name,
+                    symbol=f"(imported from {full_namespace})",
+                    definition=f"using {full_namespace}::{unit_name}",
+                    namespace=entity_full_namespace,
+                    origin_namespace=origin_namespace,
+                    file=file,
+                    is_alias=True,
+                    subnamespace=subns,
+                )
+                system.units.append(unit)
 
     def _extract_template_arg(self, text: str) -> str:
         """Extract template argument by balancing angle brackets"""
@@ -1112,6 +1168,88 @@ class SystemsParser:
                 )
                 system.point_origins.append(point_origin)
 
+    def _parse_constants(self, content: str, system: SystemInfo, file: str):
+        """Parse named_constant definitions"""
+        # Pattern 1: (inline constexpr)? struct NAME final : named_constant<symbol_text{u8"unicode", "ascii"}, ...> {} NAME;
+        constant_pattern_text = (
+            r"(?:inline\s+constexpr\s+)?struct\s+(\w+)\s+final\s*:\s*"
+            r'named_constant<symbol_text\{u8"([^"]+)"(?:\s*/\*[^*]*\*/)?\s*,\s*'
+            r'"([^"]+)"\},\s*(.+?)>\s*\{\}\s*(\w+)\s*;'
+        )
+
+        # Pattern 2: (inline constexpr)? struct NAME final : named_constant<"symbol", ...> {} NAME;
+        constant_pattern_simple = (
+            r"(?:inline\s+constexpr\s+)?struct\s+(\w+)\s+final\s*:\s*"
+            r'named_constant<"([^"]+)",\s*(.+?)>\s*\{\}\s*(\w+)\s*;'
+        )
+
+        # Parse constants with symbol_text first
+        for match in re.finditer(constant_pattern_text, content, re.DOTALL):
+            unicode_symbol = match.group(2)
+            ascii_symbol = match.group(3)
+            definition_raw = match.group(4)
+            var_name = match.group(5)
+
+            # Combine both symbols for display, escaping backticks for markdown
+            ascii_escaped = ascii_symbol.replace("`", "\\`")
+            symbol = f"{unicode_symbol} ({ascii_escaped})"
+
+            definition = self._extract_template_arg(definition_raw)
+
+            # Detect nested namespace (including inline namespaces for proper documentation)
+            match_pos = match.start()
+            nested_ns = self._get_nested_namespace(
+                content, match_pos, system.namespace if system.namespace else "", include_inline=True
+            )
+            full_namespace = (
+                f"mp_units::{system.namespace}::{nested_ns}"
+                if nested_ns and system.namespace
+                else f"mp_units::{system.namespace}"
+                if system.namespace
+                else "mp_units"
+            )
+
+            constant = Constant(
+                name=var_name,
+                symbol=symbol,
+                definition=definition,
+                namespace=full_namespace,
+                file=file,
+                subnamespace=nested_ns,
+            )
+            system.constants.append(constant)
+
+        # Parse constants with simple string symbols
+        for match in re.finditer(constant_pattern_simple, content, re.DOTALL):
+            symbol = match.group(2)
+            definition_raw = match.group(3)
+            var_name = match.group(4)
+
+            definition = self._extract_template_arg(definition_raw)
+
+            # Detect nested namespace (including inline namespaces for proper documentation)
+            match_pos = match.start()
+            nested_ns = self._get_nested_namespace(
+                content, match_pos, system.namespace if system.namespace else "", include_inline=True
+            )
+            full_namespace = (
+                f"mp_units::{system.namespace}::{nested_ns}"
+                if nested_ns and system.namespace
+                else f"mp_units::{system.namespace}"
+                if system.namespace
+                else "mp_units"
+            )
+
+            constant = Constant(
+                name=var_name,
+                symbol=symbol,
+                definition=definition,
+                namespace=full_namespace,
+                file=file,
+                subnamespace=nested_ns,
+            )
+            system.constants.append(constant)
+
     def _parse_aliases(self, content: str, system: SystemInfo, file: str):
         """Parse alias assignments and add them to the appropriate entity collection"""
         # Pattern: inline constexpr auto NAME = other_name;
@@ -1172,6 +1310,10 @@ class SystemsParser:
                     target_system_name = target_origin.namespace.replace(
                         "mp_units::", ""
                     )
+                    # Handle core system where namespace is just "mp_units"
+                    if target_system_name == "mp_units":
+                        target_system_name = ""
+                    
                     if target_system_name == system.namespace:
                         alias_target_display = target_origin.name
                     else:
@@ -1213,6 +1355,10 @@ class SystemsParser:
                     target_system_name = target_quantity.namespace.replace(
                         "mp_units::", ""
                     )
+                    # Handle core system where namespace is just "mp_units"
+                    if target_system_name == "mp_units":
+                        target_system_name = ""
+                    
                     if target_system_name == system.namespace:
                         alias_target_display = target_quantity.name
                     else:
@@ -1232,6 +1378,51 @@ class SystemsParser:
                     alias_target=alias_target_display,
                 )
                 system.quantities.append(alias_quantity)
+                continue
+
+            # Check if target is a constant
+            target_constant = None
+            for search_system in search_systems:
+                if search_system is None:
+                    continue
+                for constant in search_system.constants:
+                    if constant.name == target_lookup:
+                        target_constant = constant
+                        break
+                if target_constant:
+                    break
+
+            if target_constant:
+                # Determine the display name for alias_target
+                if "::" in target_name:
+                    # Qualified name in source - use it as-is
+                    alias_target_display = target_name
+                else:
+                    # Unqualified name - strip namespace if same system
+                    target_system_name = target_constant.namespace.replace(
+                        "mp_units::", ""
+                    )
+                    # Handle core system where namespace is just "mp_units"
+                    if target_system_name == "mp_units":
+                        target_system_name = ""
+                    
+                    if target_system_name == system.namespace:
+                        alias_target_display = target_constant.name
+                    else:
+                        alias_target_display = (
+                            f"{target_system_name}::{target_constant.name}"
+                        )
+
+                # Add as an alias constant
+                alias_constant = Constant(
+                    name=alias_name,
+                    symbol=target_constant.symbol,
+                    definition=target_constant.definition,
+                    namespace=f"mp_units::{system.namespace}",
+                    file=file,
+                    alias_target=alias_target_display,
+                )
+                system.constants.append(alias_constant)
                 continue
 
             # Check if target is a unit
@@ -1254,6 +1445,10 @@ class SystemsParser:
                 else:
                     # Unqualified name - strip namespace if same system
                     target_system_name = target_unit.namespace.replace("mp_units::", "")
+                    # Handle core system where namespace is just "mp_units"
+                    if target_system_name == "mp_units":
+                        target_system_name = ""
+                    
                     if target_system_name == system.namespace:
                         alias_target_display = target_unit.name
                     else:
@@ -1296,14 +1491,29 @@ class SystemsParser:
                 symbol_name = match.group(1)
                 unit_ref = match.group(2)
 
-                # Extract just the unit name (strip namespace if present)
-                unit_name = unit_ref.split("::")[-1]
+                # Extract just the unit/constant name (strip namespace if present)
+                entity_name = unit_ref.split("::")[-1]
 
+                # Try to find as a unit first
+                found = False
                 for unit in system.units:
-                    if unit.name == unit_name:
+                    if unit.name == entity_name:
                         if symbol_name not in unit.unit_symbols:
                             unit.unit_symbols.append(symbol_name)
+                        found = True
                         break
+
+                # If not found as a unit, try to find as a constant
+                # Only match constants from inline namespaces (or no subnamespace)
+                # since unqualified names in unit_symbols resolve to inline namespace
+                if not found:
+                    for constant in system.constants:
+                        if constant.name == entity_name:
+                            # Only match if this constant is in an inline subnamespace or has no subnamespace
+                            if not constant.subnamespace or constant.subnamespace in system.inline_subnamespaces:
+                                if symbol_name not in constant.unit_symbols:
+                                    constant.unit_symbols.append(symbol_name)
+                                break  # Only match the first eligible constant
 
             # Parse using declarations (e.g., using si::unit_symbols::cm;)
             for match in re.finditer(using_pattern, symbols_content):
@@ -1359,12 +1569,22 @@ class SystemsParser:
                                     break
                 else:
                     # Simple using declaration like: using si::ohm;
-                    unit_name = parts[-1]
+                    entity_name = parts[-1]
+                    # Try to find as a unit first
+                    found = False
                     for unit in system.units:
-                        if unit.name == unit_name:
-                            if unit_name not in unit.unit_symbols:
-                                unit.unit_symbols.append(unit_name)
+                        if unit.name == entity_name:
+                            if entity_name not in unit.unit_symbols:
+                                unit.unit_symbols.append(entity_name)
+                            found = True
                             break
+                    # If not found as a unit, try as a constant
+                    if not found:
+                        for constant in system.constants:
+                            if constant.name == entity_name:
+                                if entity_name not in constant.unit_symbols:
+                                    constant.unit_symbols.append(entity_name)
+                                break
 
     def _parse_using_declarations(self, content: str, system: SystemInfo, file: str):
         """Parse using declarations for imported units (excluding math functions)
@@ -1551,9 +1771,12 @@ class DocumentationGenerator:
         lines.append(
             "          - Quantities: reference/systems_reference/quantities_index.md\n"
         )
-        lines.append("          - Units: reference/systems_reference/units_index.md\n")
         lines.append(
             "          - Prefixes: reference/systems_reference/prefixes_index.md\n"
+        )
+        lines.append("          - Units: reference/systems_reference/units_index.md\n")
+        lines.append(
+            "          - Constants: reference/systems_reference/constants_index.md\n"
         )
         lines.append(
             "          - Point Origins: reference/systems_reference/point_origins_index.md\n"
@@ -1615,8 +1838,9 @@ class DocumentationGenerator:
             f.write("## Indexes\n\n")
             f.write("- [Dimensions](dimensions_index.md) - All base dimensions\n")
             f.write("- [Quantities](quantities_index.md) - All quantities\n")
-            f.write("- [Units](units_index.md) - All units\n")
             f.write("- [Prefixes](prefixes_index.md) - All prefixes\n")
+            f.write("- [Units](units_index.md) - All units\n")
+            f.write("- [Constants](constants_index.md) - All constants\n")
             f.write("- [Point Origins](point_origins_index.md) - All point origins\n")
             f.write(
                 "- [Quantity Hierarchies](hierarchies/index.md) - ISQ quantity type hierarchies\n\n"
@@ -1625,10 +1849,10 @@ class DocumentationGenerator:
 
             # Write table header
             f.write(
-                "| System | Dimensions | Quantities | Units | Prefixes | Point Origins |\n"
+                "| System | Dimensions | Quantities | Prefixes | Units | Constants | Point Origins |\n"
             )
             f.write(
-                "|--------|:----------:|:----------:|:-----:|:--------:|:-------------:|\n"
+                "|--------|:----------:|:----------:|:--------:|:-----:|:---------:|:-------------:|\n"
             )
 
             for namespace in sorted(self.parser.systems.keys()):
@@ -1638,6 +1862,7 @@ class DocumentationGenerator:
                 qtys = len(system.quantities)
                 units = len(system.units)
                 prefixes = len(system.prefixes)
+                constants = len(system.constants)
                 origins = len(system.point_origins)
 
                 # Format counts with em-dash for zero
@@ -1645,11 +1870,12 @@ class DocumentationGenerator:
                 qtys_str = str(qtys) if qtys else "—"
                 units_str = str(units) if units else "—"
                 prefixes_str = str(prefixes) if prefixes else "—"
+                constants_str = str(constants) if constants else "—"
                 origins_str = str(origins) if origins else "—"
 
                 f.write(
                     f"| [{display}](systems/{namespace}.md) | {dims_str} | "
-                    f"{qtys_str} | {units_str} | {prefixes_str} | {origins_str} |\n"
+                    f"{qtys_str} | {prefixes_str} | {units_str} | {constants_str} | {origins_str} |\n"
                 )
 
     def generate_dimensions_index(self):
@@ -2152,6 +2378,48 @@ class DocumentationGenerator:
 
             f.write(f"\n**Total prefixes:** {len(all_prefixes)}\n")
 
+    def generate_constants_index(self):
+        """Generate alphabetical constants index"""
+        output_file = self.output_dir / "constants_index.md"
+
+        all_constants = []
+        for sys_key, system in self.parser.systems.items():
+            for constant in system.constants:
+                # Determine display namespace
+                # For inline namespaces, only show the qualified version (not the parent namespace access)
+                if constant.subnamespace:
+                    if system.namespace:
+                        display_namespace = f"{system.namespace}::{constant.subnamespace}"
+                    else:
+                        display_namespace = f"mp_units::{constant.subnamespace}"
+                else:
+                    display_namespace = system.namespace if system.namespace else "mp_units"
+
+                all_constants.append(
+                    (constant.name, sys_key, display_namespace, constant)
+                )
+
+        with open(output_file, "w") as f:
+            self._write_auto_generated_header(f)
+            f.write("# Constants Index\n\n")
+            f.write("Alphabetical list of all constants.\n\n")
+
+            # Sort by constant name first, then display namespace
+            for name, sys_key, display_ns, constant in sorted(
+                all_constants, key=lambda x: (x[0], x[2])
+            ):
+                # Determine anchor - include subnamespace prefix if present
+                anchor = (
+                    f"{constant.subnamespace}-{name}"
+                    if constant.subnamespace
+                    else name
+                )
+                f.write(
+                    f"- [`{name}` ({display_ns})](systems/{sys_key}.md#{anchor})\n"
+                )
+
+            f.write(f"\n**Total constants:** {len(all_constants)}\n")
+
     def _compute_global_root_counts(self):
         """Compute which root names exist in multiple systems"""
         global_root_counts = defaultdict(set)  # root_name -> set of namespaces
@@ -2459,6 +2727,22 @@ class DocumentationGenerator:
                             )
                     need_separator = True
 
+                # Prefixes
+                if system.prefixes:
+                    if need_separator:
+                        f.write("\n")
+                    f.write("## Prefixes\n\n")
+                    f.write("| Name | Symbol | Definition |\n")
+                    f.write("|------|:------:|------------|\n")
+                    for prefix in sorted(
+                        system.prefixes, key=lambda p: self._get_prefix_magnitude(p)
+                    ):
+                        definition = prefix.definition.replace("|", "\\|")
+                        f.write(
+                            f'| <span id="{prefix.name}"></span>`{prefix.name}` | {prefix.symbol} | `{definition}` |\n'
+                        )
+                    need_separator = True
+
                 # Units - separate non-SI (for SI system only)
                 # For SI system: split into regular and non_si sections
                 # For other systems: include all units (even if imported from non_si)
@@ -2510,29 +2794,6 @@ class DocumentationGenerator:
                     for unit in sorted(regular_units, key=get_unit_display_name):
                         self._write_unit_row(f, unit, system)
 
-                    # Add admonition for inline subnamespaces if any units are from them
-                    inline_subns_used = set()
-                    for unit in regular_units:
-                        if unit.origin_namespace:
-                            parts = unit.origin_namespace.replace(
-                                "mp_units::", ""
-                            ).split("::")
-                            if len(parts) > 1:
-                                subns = parts[-1]
-                                if subns in system.inline_subnamespaces:
-                                    inline_subns_used.add(subns)
-
-                    if inline_subns_used:
-                        f.write("\n")
-                        f.write('!!! note "Inline Namespaces"\n\n')
-                        for subns in sorted(inline_subns_used):
-                            full_ns = f"mp_units::{namespace}::{subns}"
-                            parent_ns = f"mp_units::{namespace}"
-                            f.write(
-                                f"    The `{full_ns}` namespace is inline in `{parent_ns}`, "
-                                f"making its units directly accessible from the parent namespace.\n"
-                            )
-
                     need_separator = True
 
                 if non_si_units:
@@ -2552,20 +2813,97 @@ class DocumentationGenerator:
                     )
                     need_separator = True
 
-                # Prefixes
-                if system.prefixes:
+                # Constants
+                if system.constants:
                     if need_separator:
                         f.write("\n")
-                    f.write("## Prefixes\n\n")
-                    f.write("| Name | Symbol | Definition |\n")
-                    f.write("|------|:------:|------------|\n")
-                    for prefix in sorted(
-                        system.prefixes, key=lambda p: self._get_prefix_magnitude(p)
-                    ):
-                        definition = prefix.definition.replace("|", "\\|")
-                        f.write(
-                            f'| <span id="{prefix.name}"></span>`{prefix.name}` | {prefix.symbol} | `{definition}` |\n'
-                        )
+                    f.write("## Constants\n\n")
+                    f.write("| Name | Symbol | unit_symbol | Definition |\n")
+                    f.write("|------|:------:|:------------:|------------|\n")
+
+                    # Helper to add word breaks to long identifiers
+                    def add_word_breaks(name: str) -> str:
+                        if "_" in name:
+                            return name.replace("_", "_<wbr>")
+                        return name
+
+                    # Sort by display name (including subnamespace prefix)
+                    def get_constant_display_name(constant):
+                        """Get the display name for sorting (includes subnamespace prefix)"""
+                        if constant.subnamespace:
+                            return f"{constant.subnamespace}::{constant.name}"
+                        return constant.name
+
+                    for constant in sorted(system.constants, key=get_constant_display_name):
+                        # Determine display name with subnamespace prefix if present
+                        if constant.subnamespace:
+                            constant_display = f"{constant.subnamespace}::{constant.name}"
+                            anchor_id = f"{constant.subnamespace}-{constant.name}"
+                        else:
+                            constant_display = constant.name
+                            anchor_id = constant.name
+
+                        constant_display_with_breaks = add_word_breaks(constant_display)
+
+                        if constant.alias_target:
+                            # This is an alias - show reference to original (linkified)
+                            alias_target_linked = self._linkify_definition(
+                                constant.alias_target, system
+                            )
+                            f.write(
+                                f'| <span id="{anchor_id}"></span><code>{constant_display_with_breaks}</code> | — | — | '
+                                f"alias to {alias_target_linked} |\n"
+                            )
+                        else:
+                            # Format unit_symbols for display
+                            if constant.unit_symbols:
+                                symbols_display = ", ".join(
+                                    f"`{s}`" for s in constant.unit_symbols
+                                )
+                            else:
+                                symbols_display = "—"
+
+                            definition = constant.definition.replace("|", "\\|")
+                            # Linkify the definition
+                            definition_linked = self._linkify_definition(
+                                definition, system
+                            )
+                            f.write(
+                                f'| <span id="{anchor_id}"></span><code>{constant_display_with_breaks}</code> | '
+                                f"{constant.symbol} | {symbols_display} | <code>{definition_linked}</code> |\n"
+                            )
+
+                    # Collect inline subnamespaces used by both units and constants
+                    inline_subns_used = set()
+                    
+                    # Check units for inline namespaces
+                    for unit in regular_units:
+                        if unit.origin_namespace:
+                            parts = unit.origin_namespace.replace(
+                                "mp_units::", ""
+                            ).split("::")
+                            if len(parts) > 1:
+                                subns = parts[-1]
+                                if subns in system.inline_subnamespaces:
+                                    inline_subns_used.add(subns)
+                    
+                    # Check constants for inline namespaces
+                    for constant in system.constants:
+                        if constant.subnamespace and constant.subnamespace in system.inline_subnamespaces:
+                            inline_subns_used.add(constant.subnamespace)
+                    
+                    # Write admonition if any inline namespaces are used
+                    if inline_subns_used:
+                        f.write("\n")
+                        f.write('!!! note "Inline Namespaces"\n\n')
+                        for subns in sorted(inline_subns_used):
+                            full_ns = f"mp_units::{namespace}::{subns}"
+                            parent_ns = f"mp_units::{namespace}"
+                            f.write(
+                                f"    The `{full_ns}` namespace is inline in `{parent_ns}`, "
+                                f"making its members directly accessible from the parent namespace.\n"
+                            )
+
                     need_separator = True
 
                 # Point Origins
@@ -2918,6 +3256,39 @@ class DocumentationGenerator:
                     for sec_ns in prefix.secondary_namespaces:
                         all_refs[f"{sec_ns}::{prefix.name}"] = (sys_ns, prefix.name)
 
+            # Add constants
+            for constant in system.constants:
+                # Compute anchor ID the same way as in the constants table generation
+                anchor_id = (
+                    f"{constant.subnamespace}-{constant.name}"
+                    if constant.subnamespace
+                    else constant.name
+                )
+
+                # Add unqualified name if not already present
+                if constant.name not in all_refs:
+                    all_refs[constant.name] = (sys_ns, anchor_id)
+
+                # Add unit_symbols (like π for pi, or h for planck_constant)
+                if constant.unit_symbols:
+                    for symbol in constant.unit_symbols:
+                        if symbol not in all_refs:
+                            all_refs[symbol] = (sys_ns, anchor_id)
+
+                # Add qualified names
+                # Don't add system-level qualified name for constants with subnamespaces
+                # (multiple subnamespaces can have constants with the same name)
+                if not constant.subnamespace:
+                    all_refs[f"{sys_ns}::{constant.name}"] = (sys_ns, anchor_id)
+                if constant.subnamespace:
+                    all_refs[f"{constant.subnamespace}::{constant.name}"] = (
+                        sys_ns,
+                        anchor_id,
+                    )
+                if constant.secondary_namespaces:
+                    for sec_ns in constant.secondary_namespaces:
+                        all_refs[f"{sec_ns}::{constant.name}"] = (sys_ns, anchor_id)
+
         def replace_identifier(match):
             identifier = match.group(1)
 
@@ -2926,6 +3297,7 @@ class DocumentationGenerator:
                 "mag",
                 "mag_ratio",
                 "mag_power",
+                "pi_c",  # Magnitude constant, not a linkable entity
                 "kind_of",
                 "kind",
                 "square",
@@ -3626,11 +3998,12 @@ def main():
         )
         point_origins = len(system.point_origins)
         prefixes = len(system.prefixes)
+        constants = len(system.constants)
         print(
             f"  - {ns}: {len(system.dimensions)} dims, "
             f"{len(system.quantities)} qtys, {base_units} base units, "
             f"{derived_units} derived units, {point_origins} point origins, "
-            f"{prefixes} prefixes"
+            f"{prefixes} prefixes, {constants} constants"
         )
 
     print("\nExtracting metadata from C++...")
@@ -3646,6 +4019,7 @@ def main():
     generator.generate_quantities_index()
     generator.generate_units_index()
     generator.generate_prefixes_index()
+    generator.generate_constants_index()
     generator.generate_point_origins_index()
     hierarchy_count = generator.generate_cross_system_hierarchies()
     generator.generate_hierarchies_overview()
@@ -3659,6 +4033,7 @@ def main():
     total_units = sum(len(s.units) for s in parser.systems.values())
     total_origins = sum(len(s.point_origins) for s in parser.systems.values())
     total_prefixes = sum(len(s.prefixes) for s in parser.systems.values())
+    total_constants = sum(len(s.constants) for s in parser.systems.values())
 
     print("\nDocumentation generation complete!")
     print(f"  - {len(parser.systems)} systems processed")
@@ -3668,6 +4043,7 @@ def main():
     print(f"  - {total_units} units documented")
     print(f"  - {total_origins} point origins documented")
     print(f"  - {total_prefixes} prefixes documented")
+    print(f"  - {total_constants} constants documented")
 
     return 0
 

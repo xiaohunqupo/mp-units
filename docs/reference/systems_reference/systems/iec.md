@@ -53,17 +53,6 @@
 | <span id="transfer_rate"></span><code>transfer_<wbr>rate</code> | Real | — | — | — | — | alias to [isq::transfer_<wbr>rate](#transfer_rate) | — |
 | <span id="waiting_probability"></span><code>waiting_<wbr>probability</code> | Real | — | — | — | — | alias to [isq::waiting_<wbr>probability](#waiting_probability) | — |
 
-## Units
-
-| Unit Name | Symbol | unit_symbol | Definition |
-|-----------|:------:|:-----------:|------------|
-| <span id="baud"></span><code>baud</code> | Bd | `Bd` | <code>[one](core.md#one) / <wbr>[si::second](si.md#second)<br>kind: [isq::modulation_<wbr>rate](#modulation_rate)</code> |
-| <span id="bit"></span><code>bit</code> | bit | `bit` | <code>[one](core.md#one)<br>kind: [isq::storage_<wbr>capacity](#storage_capacity)</code> |
-| <span id="byte"></span><code>byte</code> | B | `B` | <code>mag<8> * <wbr>[bit](#bit)</code> |
-| <span id="erlang"></span><code>erlang</code> | E | `E` | <code>kind: [isq::traffic_<wbr>intensity](#traffic_intensity)</code> |
-| <span id="octet"></span><code>octet</code> | o | `o` | <code>mag<8> * <wbr>[bit](#bit)</code> |
-| <span id="volt_ampere_reactive_power"></span><code>volt_<wbr>ampere_<wbr>reactive_<wbr>power</code> | var | `var` | <code>[si::volt](si.md#volt) * <wbr>[si::ampere](si.md#ampere)<br>kind: [isq::reactive_<wbr>power](isq.md#reactive_power)</code> |
-
 ## Prefixes
 
 | Name | Symbol | Definition |
@@ -76,3 +65,14 @@
 | <span id="exbi"></span>`exbi` | Ei | `mag_power<2, 60>` |
 | <span id="zebi"></span>`zebi` | Zi | `mag_power<2, 70>` |
 | <span id="yobi"></span>`yobi` | Yi | `mag_power<2, 80>` |
+
+## Units
+
+| Unit Name | Symbol | unit_symbol | Definition |
+|-----------|:------:|:-----------:|------------|
+| <span id="baud"></span><code>baud</code> | Bd | `Bd` | <code>[one](core.md#one) / <wbr>[si::second](si.md#second)<br>kind: [isq::modulation_<wbr>rate](#modulation_rate)</code> |
+| <span id="bit"></span><code>bit</code> | bit | `bit` | <code>[one](core.md#one)<br>kind: [isq::storage_<wbr>capacity](#storage_capacity)</code> |
+| <span id="byte"></span><code>byte</code> | B | `B` | <code>mag<8> * <wbr>[bit](#bit)</code> |
+| <span id="erlang"></span><code>erlang</code> | E | `E` | <code>kind: [isq::traffic_<wbr>intensity](#traffic_intensity)</code> |
+| <span id="octet"></span><code>octet</code> | o | `o` | <code>mag<8> * <wbr>[bit](#bit)</code> |
+| <span id="volt_ampere_reactive_power"></span><code>volt_<wbr>ampere_<wbr>reactive_<wbr>power</code> | var | `var` | <code>[si::volt](si.md#volt) * <wbr>[si::ampere](si.md#ampere)<br>kind: [isq::reactive_<wbr>power](isq.md#reactive_power)</code> |

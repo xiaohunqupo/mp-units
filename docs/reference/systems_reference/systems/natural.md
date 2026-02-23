@@ -40,4 +40,4 @@
 |-----------|:------:|:-----------:|------------|
 | <span id="electronvolt"></span><code>electronvolt</code> | eV | — | <code>kind: [energy](#energy)</code> |
 | <span id="gigaelectronvolt"></span><code>gigaelectronvolt</code> | — | `GeV` | <code>[si::giga](si.md#giga)<[electronvolt](#electronvolt)></code> |
-| <span id="speed_of_light"></span><code>speed_<wbr>of_<wbr>light</code> | — | — | alias to [mp_<wbr>units::one](core.md#one) |
+| <span id="speed_of_light"></span><code>speed_<wbr>of_<wbr>light</code> | — | — | alias to ::[one](core.md#one) |
