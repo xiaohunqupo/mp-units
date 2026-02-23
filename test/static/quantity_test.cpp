@@ -1309,6 +1309,24 @@ static_assert(v{1., 2., 3.} * one == v{1., 2., 3.});
 static_assert(v{1., 2., 3.} != v{3., 2., 1.} * one);
 #endif
 
+static_assert(0 * m == 0);
+static_assert(0. * m == 0);
+static_assert(0 * m == 0.);
+static_assert(0. * m == 0.);
+static_assert(42 * m != 0);
+static_assert(42. * m != 0);
+static_assert(42 * m != 0.);
+static_assert(42. * m != 0.);
+
+static_assert(!(42 * m == 0));
+static_assert(!(42. * m == 0));
+static_assert(!(42 * m == 0.));
+static_assert(!(42. * m == 0.));
+static_assert(!(0 * m != 0));
+static_assert(!(0. * m != 0));
+static_assert(!(0 * m != 0.));
+static_assert(!(0. * m != 0.));
+
 ///////////////////////
 // ordering operators
 ///////////////////////
@@ -1365,6 +1383,38 @@ static_assert(!(123 * km >= 321'000 * m));
 
 static_assert(1 * one < 2);
 static_assert(1 < 2 * one);
+
+static_assert(42 * m > 0);
+static_assert(42. * m > 0);
+static_assert(42 * m > 0.);
+static_assert(42. * m > 0.);
+static_assert(-42 * m < 0);
+static_assert(-42. * m < 0);
+static_assert(-42 * m < 0.);
+static_assert(-42. * m < 0.);
+
+static_assert(!(-42 * m > 0));
+static_assert(!(-42. * m > 0));
+static_assert(!(-42 * m > 0.));
+static_assert(!(-42. * m > 0.));
+static_assert(!(42 * m < 0));
+static_assert(!(42. * m < 0));
+static_assert(!(42 * m < 0.));
+static_assert(!(42. * m < 0.));
+
+static_assert(42 * m >= 0);
+static_assert(42. * m >= 0);
+static_assert(42 * m >= 0.);
+static_assert(42. * m >= 0.);
+static_assert(0 * m >= 0);
+static_assert(-42 * m <= 0);
+static_assert(-42. * m <= 0);
+static_assert(-42 * m <= 0.);
+static_assert(-42. * m <= 0.);
+static_assert(0 * m <= 0);
+
+static_assert(!(-42 * m >= 0));
+static_assert(!(42 * m <= 0));
 
 
 //////////////////

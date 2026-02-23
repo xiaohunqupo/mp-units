@@ -131,7 +131,7 @@ template<Quantity Q, std::invocable<Q> Func, PrefixableUnit U, auto Character = 
 constexpr decltype(auto) invoke_with_prefixed(Func func, Q q, U u, prefix_range range = prefix_range::engineering,
                                               int min_integral_digits = 1)
 {
-  if (is_eq_zero(q)) return func(q.in(u));
+  if (q == 0) return func(q.in(u));
 
   using std::abs, std::log10, std::floor;
 

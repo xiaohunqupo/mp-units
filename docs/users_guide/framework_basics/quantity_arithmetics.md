@@ -293,8 +293,10 @@ if (q1 / q2 != 0 * m / s)
 ```
 
 The above would work (assuming we are dealing with the quantity of speed) but could be
-suboptimal if the result of `q1 / q2` is not expressed in `m / s`. To eliminate the need
-for conversion, we need to write:
+suboptimal if the result of `q1 / q2` is not expressed in `m / s`. The library would
+need to rescale the arguments to the common unit before comparing if the value is zero.
+
+To eliminate the need for conversion, we need to write:
 
 ```cpp
 if (auto q = q1 / q2; q != q.zero())
@@ -304,32 +306,36 @@ if (auto q = q1 / q2; q != q.zero())
 but that is a bit inconvenient, and inexperienced users could be unaware of this technique
 and its reasons.
 
-For the above reasons, the library provides dedicated interfaces to compare against zero
-that follow the naming convention of
-[named comparison functions](https://en.cppreference.com/w/cpp/utility/compare/named_comparison_functions)
-in the C++ Standard Library. The _mp-units/compare.h_ header file exposes the following functions:
+For the above reasons, the library provides special support for comparisons against the
+literal `0`. Only this one value has elevated privileges and does not have to state the
+unit — the numerical value zero is common to all scaled units of any kind.
 
-- `is_eq_zero`
-- `is_neq_zero`
-- `is_lt_zero`
-- `is_gt_zero`
-- `is_lteq_zero`
-- `is_gteq_zero`
-
-Thanks to them, to save typing and not pay for unneeded conversions, our check could be
+Thanks to that, to save typing and not pay for unneeded conversions, our check could be
 implemented as follows:
 
 ```cpp
-if (is_neq_zero(q1 / q2))
+if (q1 / q2 != 0)
+  // ...
+```
+
+This works for all six comparison operators (`==`, `!=`, `<`, `>`, `<=`, `>=`):
+
+```cpp
+if (q > 0)
+  // ...
+if (q <= 0)
   // ...
 ```
 
 !!! tip
 
-    Those functions will work with any type `T` that exposes `zero()` member function returning
-    something comparable to `T`. Thanks to that, we can use them not only with quantities but also
-    with [`std::chrono::duration`](https://en.cppreference.com/w/cpp/chrono/duration) or any other
-    type that exposes such an interface.
+    All six comparison operators support comparison against zero without specifying a unit.
+    This works with any representation type `rep` for which
+    `representation_values<rep>::zero()` is provided.
+
+    Only a compile-time zero is accepted: an integer or floating-point literal that is zero
+    (e.g., `0`, `0.`, `0.f`, `0LL`). Passing another literal or a runtime variable — even one
+    whose value happens to be zero — is rejected at compile time.
 
 
 ## Other maths

@@ -48,7 +48,10 @@
 import std;
 #else
 #include <compare>  // IWYU pragma: export
+#include <concepts>
 #include <limits>
+#include <stdexcept>
+#include <type_traits>
 #include <utility>
 #if MP_UNITS_HOSTED
 #include <locale>
@@ -59,6 +62,15 @@ import std;
 namespace mp_units {
 
 namespace detail {
+
+struct zero {
+  template<typename T>
+    requires std::is_arithmetic_v<T> && (!is_same_v<T, bool>)
+  consteval explicit(false) zero(T val)
+  {
+    if (val != T{0}) MP_UNITS_THROW(std::logic_error("not zero"));
+  }
+};
 
 template<Unit UFrom, Unit UTo>
 [[nodiscard]] consteval bool integral_conversion_factor(UFrom from, UTo to)
@@ -467,7 +479,7 @@ public:
             }
   constexpr quantity& operator%=(const quantity<R2, Rep2>& other) &
   {
-    MP_UNITS_EXPECTS_DEBUG(is_neq_zero(other));
+    MP_UNITS_EXPECTS_DEBUG(other != 0);
     if constexpr (equivalent(unit, get_unit(R2)))
       numerical_value_is_an_implementation_detail_ %= other.numerical_value_is_an_implementation_detail_;
     else
@@ -574,7 +586,7 @@ public:
             detail::CommonlyInvocableQuantities<std::modulus<>, quantity, quantity<R2, Rep2>>
   [[nodiscard]] friend constexpr Quantity auto operator%(const Q& lhs, const quantity<R2, Rep2>& rhs)
   {
-    MP_UNITS_EXPECTS_DEBUG(is_neq_zero(rhs));
+    MP_UNITS_EXPECTS_DEBUG(rhs != 0);
     using ret = detail::common_quantity_for<std::modulus<>, quantity, quantity<R2, Rep2>>;
     const ret ret_lhs(lhs);
     const ret ret_rhs(rhs);
@@ -625,7 +637,7 @@ public:
     requires detail::InvocableQuantities<std::divides<>, quantity, quantity<R2, Rep2>>
   [[nodiscard]] friend constexpr Quantity auto operator/(const Q& lhs, const quantity<R2, Rep2>& rhs)
   {
-    MP_UNITS_EXPECTS_DEBUG(is_neq_zero(rhs));
+    MP_UNITS_EXPECTS_DEBUG(rhs != 0);
     return ::mp_units::quantity{lhs.numerical_value_ref_in(unit) / rhs.numerical_value_ref_in(rhs.unit), R / R2};
   }
 
@@ -643,7 +655,7 @@ public:
             (!Reference<Value>) && detail::InvokeResultOf<quantity_spec, std::divides<>, const Value&, rep>
   [[nodiscard]] friend constexpr Quantity auto operator/(const Value& val, const Q& q)
   {
-    MP_UNITS_EXPECTS_DEBUG(is_neq_zero(q));
+    MP_UNITS_EXPECTS_DEBUG(q != 0);
     return ::mp_units::quantity{val / q.numerical_value_ref_in(unit), one / R};
   }
 
@@ -668,6 +680,13 @@ public:
     return lhs.numerical_value_ref_in(unit) == rhs;
   }
 
+  template<std::derived_from<quantity> Q>
+    requires std::equality_comparable<rep> && requires { representation_values<rep>::zero(); }
+  [[nodiscard]] friend constexpr bool operator==(const Q& lhs, detail::zero)
+  {
+    return lhs.numerical_value_ref_in(unit) == representation_values<rep>::zero();
+  }
+
   template<std::derived_from<quantity> Q, auto R2, typename Rep2>
     requires requires { typename std::common_type_t<quantity, quantity<R2, Rep2>>; } &&
              std::three_way_comparable<typename std::common_type_t<quantity, quantity<R2, Rep2>>::rep>
@@ -684,6 +703,13 @@ public:
   [[nodiscard]] friend constexpr auto operator<=>(const Q& lhs, const Value& rhs)
   {
     return lhs.numerical_value_ref_in(unit) <=> rhs;
+  }
+
+  template<std::derived_from<quantity> Q>
+    requires std::three_way_comparable<rep> && requires { representation_values<rep>::zero(); }
+  [[nodiscard]] friend constexpr auto operator<=>(const Q& lhs, detail::zero)
+  {
+    return lhs.numerical_value_ref_in(unit) <=> representation_values<rep>::zero();
   }
 };
 

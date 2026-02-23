@@ -26,7 +26,6 @@
 #include <mp-units/bits/hacks.h>
 #include <mp-units/bits/module_macros.h>
 #include <mp-units/compat_macros.h>
-#include <mp-units/framework/compare.h>
 #include <mp-units/framework/customization_points.h>
 #include <mp-units/framework/quantity.h>
 #include <mp-units/framework/quantity_point_concepts.h>
@@ -109,9 +108,9 @@ struct point_origin_interface {
                        is_derived_from_specialization_of_v<PO2, relative_point_origin>)
       return PO1::_quantity_point_ == PO2::_quantity_point_;
     else if constexpr (is_derived_from_specialization_of_v<PO1, relative_point_origin>)
-      return detail::same_absolute_point_origins(po1, po2) && is_eq_zero(PO1::_quantity_point_.quantity_from_zero());
+      return detail::same_absolute_point_origins(po1, po2) && PO1::_quantity_point_.quantity_from_zero() == 0;
     else if constexpr (is_derived_from_specialization_of_v<PO2, relative_point_origin>)
-      return detail::same_absolute_point_origins(po1, po2) && is_eq_zero(PO2::_quantity_point_.quantity_from_zero());
+      return detail::same_absolute_point_origins(po1, po2) && PO2::_quantity_point_.quantity_from_zero() == 0;
   }
 };
 
