@@ -69,26 +69,25 @@ All of the above quantity specifications have to be marked as `final`.
 
 `Unit` concept matches all the [units](../../reference/glossary.md#unit) in the library including:
 
-- [Base units](../../reference/glossary.md#base-unit) defined by a user by inheriting from the
-  `named_unit` class template instantiated with a unique symbol identifier
-  describing this unit
-  in a specific [system of units](../../reference/glossary.md#system-of-units).
-- Named scaled units defined by a user by inheriting from the `named_unit` class template instantiated
-  with a unique symbol identifier and a product of multiplying another unit with some magnitude.
-- Prefixed units defined by a user by inheriting from the `prefixed_unit` class template instantiated
-  with a prefix symbol, a magnitude, and a unit to be prefixed.
-- [Derived named units](../../reference/glossary.md#derived-unit) defined by a user by inheriting
-  from the `named_unit` class template instantiated with a unique symbol identifier and a result
-  of [unit equation](../../reference/glossary.md#unit-equation) passed as an argument.
+- [Base units](../../reference/glossary.md#base-unit) defined by a user by inheriting from
+  the `named_unit` class template instantiated with a unique symbol identifier describing
+  this unit in a specific [system of units](../../reference/glossary.md#system-of-units).
+- Named scaled units defined by a user by inheriting from the `named_unit` class template
+  instantiated with a unique symbol identifier and a product of multiplying another unit
+  with some magnitude.
+- Prefixed units defined by a user by inheriting from the `prefixed_unit` class template
+  instantiated with a prefix symbol, a magnitude, and a unit to be prefixed.
+- [Derived named units](../../reference/glossary.md#derived-unit) defined by a user by
+  inheriting from the `named_unit` class template instantiated with a unique symbol identifier
+  and a result of [unit equation](../../reference/glossary.md#unit-equation) passed as
+  an argument.
 - [Derived unnamed units](../../reference/glossary.md#derived-unit) being a result of a
   [unit equations](../../reference/glossary.md#unit-equation) on other units.
+- Physical constants defined by a user by inheriting from the `named_constant` class template
+  instantiated with a unique symbol identifier and a product of multiplying another unit with
+  some magnitude.
 
 All of the above units have to be marked as `final`.
-
-!!! note
-
-    In the **mp-units** library, [physical constants are also implemented as units](faster_than_lightspeed_constants.md).
-
 
 ### `PrefixableUnit<T>` { #PrefixableUnit }
 

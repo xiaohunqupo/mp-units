@@ -254,7 +254,7 @@ inline constexpr struct gram   final : named_unit<"g", kind_of<isq::mass>> {} gr
 inline constexpr auto kilogram = kilo<gram>;
 inline constexpr struct newton final : named_unit<"N", kilogram * metre / square(second)> {} newton;
 
-inline constexpr struct speed_of_light_in_vacuum final : named_unit<"c", mag<299'792'458> * metre / second> {} speed_of_light_in_vacuum;
+inline constexpr struct speed_of_light_in_vacuum final : named_constant<"c", mag<299'792'458> * metre / second> {} speed_of_light_in_vacuum;
 ```
 
 The [unit equation](../../reference/glossary.md#unit-equation) of `si::metre / si::second` results

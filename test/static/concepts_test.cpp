@@ -200,7 +200,7 @@ static_assert(!PrefixableUnit<decltype(inverse(si::second))>);
 static_assert(!PrefixableUnit<decltype(mag<10> * si::second)>);
 static_assert(!PrefixableUnit<decltype(square(si::metre))>);
 static_assert(!PrefixableUnit<decltype(pow<2>(si::metre))>);
-static_assert(PrefixableUnit<struct si::standard_gravity>);
+static_assert(!PrefixableUnit<struct si::standard_gravity>);
 static_assert(!PrefixableUnit<scaled_unit<mag<10>, struct si::second>>);
 static_assert(!PrefixableUnit<derived_unit<struct si::metre, per<struct si::second>>>);
 static_assert(!PrefixableUnit<struct one>);

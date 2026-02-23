@@ -201,7 +201,7 @@ int main()
         quantity_spec<isq::duration, isq::force / (isq::mass_flow_rate * isq::acceleration)> {} specific_impulse;
 
     inline constexpr struct standard_gravity final :
-        named_unit<symbol_text{u8"g₀", "g_0"}, mag_ratio<980'665, 100'000> * si::metre / square(si::second)> {} standard_gravity;
+        named_constant<symbol_text{u8"g₀", "g_0"}, mag_ratio<980'665, 100'000> * si::metre / square(si::second)> {} standard_gravity;
     inline constexpr struct kilogram_force final :
         named_unit<"kgf", si::kilogram * standard_gravity> {} kilogram_force;
 
@@ -311,7 +311,7 @@ int main()
     ```cpp
     // ✅ mp-units: g₀ as compile-time unit
     inline constexpr struct standard_gravity :
-      named_unit<"g₀", mag_ratio<980'665, 100'000> * si::metre / square(si::second)> {} standard_gravity;
+      named_constant<"g₀", mag_ratio<980'665, 100'000> * si::metre / square(si::second)> {} standard_gravity;
 
     inline constexpr Unit auto g0 = standard_gravity;
     ```

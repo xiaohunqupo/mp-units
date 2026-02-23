@@ -75,13 +75,13 @@ composes to express dimensions and units of derived quantities.
 === "Constants"
 
     ```cpp
-    inline constexpr struct hyperfine_structure_transition_frequency_of_cs final : named_unit<{u8"Δν_Cs", "dv_Cs"}, mag<9'192'631'770> * hertz> {} hyperfine_structure_transition_frequency_of_cs;
-    inline constexpr struct speed_of_light_in_vacuum final : named_unit<"c", mag<299'792'458> * metre / second> {} speed_of_light_in_vacuum;
-    inline constexpr struct planck_constant final : named_unit<"h", mag_ratio<662'607'015, 100'000'000> * mag_power<10, -34> * joule * second> {} planck_constant;
-    inline constexpr struct elementary_charge final : named_unit<"e", mag_ratio<1'602'176'634, 1'000'000'000> * mag_power<10, -19> * coulomb> {} elementary_charge;
-    inline constexpr struct boltzmann_constant final : named_unit<"k", mag_ratio<1'380'649, 1'000'000> * mag_power<10, -23> * joule / kelvin> {} boltzmann_constant;
-    inline constexpr struct avogadro_constant final : named_unit<"N_A", mag_ratio<602'214'076, 100'000'000> * mag_power<10, 23> / mole> {} avogadro_constant;
-    inline constexpr struct luminous_efficacy final : named_unit<"K_cd", mag<683> * lumen / watt> {} luminous_efficacy;
+    inline constexpr struct hyperfine_structure_transition_frequency_of_cs final : named_constant<{u8"Δν_Cs", "dv_Cs"}, mag<9'192'631'770> * hertz> {} hyperfine_structure_transition_frequency_of_cs;
+    inline constexpr struct speed_of_light_in_vacuum final : named_constant<"c", mag<299'792'458> * metre / second> {} speed_of_light_in_vacuum;
+    inline constexpr struct planck_constant final : named_constant<"h", mag_ratio<662'607'015, 100'000'000> * mag_power<10, -34> * joule * second> {} planck_constant;
+    inline constexpr struct elementary_charge final : named_constant<"e", mag_ratio<1'602'176'634, 1'000'000'000> * mag_power<10, -19> * coulomb> {} elementary_charge;
+    inline constexpr struct boltzmann_constant final : named_constant<"k", mag_ratio<1'380'649, 1'000'000> * mag_power<10, -23> * joule / kelvin> {} boltzmann_constant;
+    inline constexpr struct avogadro_constant final : named_constant<"N_A", mag_ratio<602'214'076, 100'000'000> * mag_power<10, 23> / mole> {} avogadro_constant;
+    inline constexpr struct luminous_efficacy final : named_constant<"K_cd", mag<683> * lumen / watt> {} luminous_efficacy;
     ```
 
 !!! important

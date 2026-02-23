@@ -278,7 +278,7 @@ which is defined using a floating-point magnitude having a factor of the number 
 
 ```cpp
 inline constexpr struct pi_c final : mag_constant<symbol_text{u8"π", "pi"}, std::numbers::pi_v<long double>> {} pi_c;
-inline constexpr struct pi final : named_unit<symbol_text{u8"π", "pi"}, mag<pi_c> * one> {} pi;
+inline constexpr struct pi final : named_constant<symbol_text{u8"π", "pi"}, mag<pi_c> * one> {} pi;
 inline constexpr auto π = pi;
 ```
 

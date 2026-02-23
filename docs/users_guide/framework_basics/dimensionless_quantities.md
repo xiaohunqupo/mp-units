@@ -114,7 +114,7 @@ both units of _length_:
 
 ```cpp
 inline constexpr struct hubble_constant final :
-    named_unit<{u8"H₀", "H_0"}, mag_ratio<701, 10> * si::kilo<si::metre> / si::second / si::mega<parsec>> {} hubble_constant;
+    named_constant<{u8"H₀", "H_0"}, mag_ratio<701, 10> * si::kilo<si::metre> / si::second / si::mega<parsec>> {} hubble_constant;
 ```
 
 

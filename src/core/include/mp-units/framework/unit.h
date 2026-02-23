@@ -63,6 +63,11 @@ import std;
 
 namespace mp_units {
 
+MP_UNITS_EXPORT
+template<symbol_text Symbol, Unit auto U>
+  requires(!Symbol.empty())
+struct named_constant;
+
 namespace detail {
 
 template<UnitMagnitude auto M, Unit U>
@@ -106,6 +111,9 @@ template<Unit T, symbol_text Symbol, auto... Args>
 
 template<Unit T, symbol_text Symbol, Unit auto U, auto... Args>
 [[nodiscard]] consteval auto get_canonical_unit_impl(T, const named_unit<Symbol, U, Args...>&);
+
+template<Unit T, symbol_text Symbol, Unit auto U>
+[[nodiscard]] consteval auto get_canonical_unit_impl(T, const named_constant<Symbol, U>&);
 
 template<typename T, typename F, int Num, int... Den>
 [[nodiscard]] consteval auto get_canonical_unit_impl(T, const power<F, Num, Den...>&);
@@ -368,6 +376,26 @@ struct named_unit<Symbol, U, QS, PO> : decltype(U)::_base_type_ {
 };
 
 /**
+ * @brief Named constant definition
+ *
+ * It is very similar to `named_unit` but:
+ * - allows negative exponents in the unit definition (TODO )
+ * - does not allow the constant to be associated with a `quantity_spec`
+ * - does not allow the constant to be prefixed
+ *
+ * @tparam Symbol a short text representation of the constant
+ * @tparam Unit a unit that we use to define a constant
+ */
+MP_UNITS_EXPORT
+template<symbol_text Symbol, Unit auto U>
+  requires(!Symbol.empty())
+struct named_constant : decltype(U)::_base_type_ {
+  using _base_type_ = named_constant;       // exposition only
+  static constexpr auto _symbol_ = Symbol;  ///< Unique constant identifier
+};
+
+
+/**
  * @brief A prefixed unit
  *
  * Defines a new unit that is a scaled version of another unit with the scaling
@@ -534,6 +562,12 @@ template<Unit T, symbol_text Symbol, Unit auto U, auto... Args>
   return get_canonical_unit(U);
 }
 
+template<Unit T, symbol_text Symbol, Unit auto U>
+[[nodiscard]] consteval auto get_canonical_unit_impl(T, const named_constant<Symbol, U>&)
+{
+  return get_canonical_unit(U);
+}
+
 template<typename F, int Num, int... Den, typename... Us>
 [[nodiscard]] consteval auto get_canonical_unit_impl(const power<F, Num, Den...>&, const type_list<Us...>&)
 {
@@ -638,7 +672,7 @@ inline constexpr struct per_mille final : named_unit<symbol_text{u8"‰" /* U+20
 inline constexpr struct parts_per_million final : named_unit<"ppm", mag_ratio<1, 1'000'000> * one> {} parts_per_million;
 inline constexpr auto ppm = parts_per_million;
 // TODO make it a unit constant rather than a named unit when such support will be provided
-inline constexpr struct pi final : named_unit<symbol_text{u8"π" /* U+03C0 GREEK SMALL LETTER PI */, "pi"}, mag<pi_c> * one> {} pi;
+inline constexpr struct pi final : named_constant<symbol_text{u8"π" /* U+03C0 GREEK SMALL LETTER PI */, "pi"}, mag<pi_c> * one> {} pi;
 inline constexpr auto π /* U+03C0 GREEK SMALL LETTER PI */ = pi;
 // clang-format on
 

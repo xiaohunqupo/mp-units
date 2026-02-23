@@ -64,38 +64,38 @@ namespace mp_units::hep {
 
 // Avogadro constant (exact since 2019 SI redefinition)
 inline constexpr struct avogadro_constant final :
-    named_unit<"N_A", mag_ratio<602'214'076, 100'000'000> * mag_power<10, 23> / mole> {} avogadro_constant;
+    named_constant<"N_A", mag_ratio<602'214'076, 100'000'000> * mag_power<10, 23> / mole> {} avogadro_constant;
 
 // Speed of light (exact since 1983)
 inline constexpr struct speed_of_light_in_vacuum final :
-    named_unit<"c", mag<299'792'458> * meter / second> {} speed_of_light_in_vacuum;
+    named_constant<"c", mag<299'792'458> * meter / second> {} speed_of_light_in_vacuum;
 
 // Planck constant (exact since 2019 SI redefinition)
 inline constexpr struct planck_constant final :
-    named_unit<"h", mag_ratio<662'607'015, 100'000'000> * mag_power<10, -34> * joule * second> {} planck_constant;
+    named_constant<"h", mag_ratio<662'607'015, 100'000'000> * mag_power<10, -34> * joule * second> {} planck_constant;
 
 // Elementary charge (exact since 2019 SI redefinition)
 inline constexpr struct elementary_charge final :
-    named_unit<"e", eplus> {} elementary_charge;
+    named_constant<"e", eplus> {} elementary_charge;
 
 // Electromagnetic constants
 inline constexpr struct permeability_of_vacuum final :
-    named_unit<symbol_text{u8"μ₀", "mu_0"}, mag<4> * mag_power<10, -7> * π * henry / meter> {} permeability_of_vacuum;
+    named_constant<symbol_text{u8"μ₀", "mu_0"}, mag<4> * mag_power<10, -7> * π * henry / meter> {} permeability_of_vacuum;
 
 // Standard conditions
 inline constexpr struct standard_temperature final :
-    named_unit<"T_STP", mag_ratio<27'315, 100> * kelvin> {} standard_temperature;
+    named_constant<"T_STP", mag_ratio<27'315, 100> * kelvin> {} standard_temperature;
 
 inline constexpr struct standard_pressure final :
-    named_unit<"P_STP", atmosphere> {} standard_pressure;
+    named_constant<"P_STP", atmosphere> {} standard_pressure;
 
 // Gas threshold (CLHEP convention)
 inline constexpr struct gas_threshold final :
-    named_unit<"gas_threshold", mag<10> * si::milli<gram> / cubic(si::centi<meter>)> {} gas_threshold;
+    named_constant<"gas_threshold", mag<10> * si::milli<gram> / cubic(si::centi<meter>)> {} gas_threshold;
 
 // Universe mean density (cosmological)
 inline constexpr struct universe_mean_density final :
-    named_unit<symbol_text{u8"ρ_universe", "rho_universe"}, mag_power<10, -25> * gram / cubic(si::centi<meter>)> {} universe_mean_density;
+    named_constant<symbol_text{u8"ρ_universe", "rho_universe"}, mag_power<10, -25> * gram / cubic(si::centi<meter>)> {} universe_mean_density;
 
 // clang-format on
 
@@ -106,45 +106,45 @@ namespace codata2014 {
 
 // Boltzmann constant (CODATA 2014: 8.6173303e-11 MeV/K)
 inline constexpr struct boltzmann_constant final :
-    named_unit<"k_B", mag_ratio<86'173'303, 10'000'000> * mag_power<10, -11> * si::mega<electronvolt> / kelvin> {} boltzmann_constant;
+    named_constant<"k_B", mag_ratio<86'173'303, 10'000'000> * mag_power<10, -11> * si::mega<electronvolt> / kelvin> {} boltzmann_constant;
 
 // Particle masses (CODATA 2014)
 inline constexpr struct electron_mass final :
-    named_unit<"m_e", mag_ratio<5'109'989'461, 10'000'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} electron_mass;
+    named_constant<"m_e", mag_ratio<5'109'989'461, 10'000'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} electron_mass;
 
 inline constexpr struct proton_mass final :
-    named_unit<"m_p", mag_ratio<9'382'720'813, 10'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} proton_mass;
+    named_constant<"m_p", mag_ratio<9'382'720'813, 10'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} proton_mass;
 
 inline constexpr struct neutron_mass final :
-    named_unit<"m_n", mag_ratio<9'395'654'133, 10'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} neutron_mass;
+    named_constant<"m_n", mag_ratio<9'395'654'133, 10'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} neutron_mass;
 
 // Atomic mass unit (CODATA 2014)
 inline constexpr struct atomic_mass_unit final :
-    named_unit<"u", mag_ratio<9'314'940'954, 10'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} atomic_mass_unit;
+    named_constant<"u", mag_ratio<9'314'940'954, 10'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} atomic_mass_unit;
 
 // Fine structure constant (CODATA 2014: 7.2973525664e-3)
 inline constexpr struct fine_structure_constant final :
-    named_unit<symbol_text{u8"α", "alpha"}, mag_ratio<72'973'525'664, 10'000'000'000> * mag_power<10, -3> * one> {} fine_structure_constant;
+    named_constant<symbol_text{u8"α", "alpha"}, mag_ratio<72'973'525'664, 10'000'000'000> * mag_power<10, -3> * one> {} fine_structure_constant;
 
 // Classical electron radius (CODATA 2014: 2.8179403227e-15 m)
 inline constexpr struct classical_electron_radius final :
-    named_unit<"r_e", mag_ratio<28'179'403'227, 10'000'000'000> * mag_power<10, -15> * meter> {} classical_electron_radius;
+    named_constant<"r_e", mag_ratio<28'179'403'227, 10'000'000'000> * mag_power<10, -15> * meter> {} classical_electron_radius;
 
 // Electron Compton wavelength (CODATA 2014: 2.4263102367e-12 m)
 inline constexpr struct electron_compton_wavelength final :
-    named_unit<symbol_text{u8"λ_C", "lambda_C"}, mag_ratio<24'263'102'367, 10'000'000'000> * mag_power<10, -12> * meter> {} electron_compton_wavelength;
+    named_constant<symbol_text{u8"λ_C", "lambda_C"}, mag_ratio<24'263'102'367, 10'000'000'000> * mag_power<10, -12> * meter> {} electron_compton_wavelength;
 
 // Bohr radius (CODATA 2014: 5.2917721067e-11 m)
 inline constexpr struct bohr_radius final :
-    named_unit<"a_0", mag_ratio<52'917'721'067, 10'000'000'000> * mag_power<10, -11> * meter> {} bohr_radius;
+    named_constant<"a_0", mag_ratio<52'917'721'067, 10'000'000'000> * mag_power<10, -11> * meter> {} bohr_radius;
 
 // Bohr magneton (CODATA 2014: 9.274009994e-24 J/T)
 inline constexpr struct bohr_magneton final :
-    named_unit<symbol_text{u8"μ_B", "mu_B"}, mag_ratio<9'274'009'994, 1'000'000'000> * mag_power<10, -24> * joule / tesla> {} bohr_magneton;
+    named_constant<symbol_text{u8"μ_B", "mu_B"}, mag_ratio<9'274'009'994, 1'000'000'000> * mag_power<10, -24> * joule / tesla> {} bohr_magneton;
 
 // Nuclear magneton (CODATA 2014: 5.050783699e-27 J/T)
 inline constexpr struct nuclear_magneton final :
-    named_unit<symbol_text{u8"μ_N", "mu_N"}, mag_ratio<5'050'783'699, 1'000'000'000> * mag_power<10, -27> * joule / tesla> {} nuclear_magneton;
+    named_constant<symbol_text{u8"μ_N", "mu_N"}, mag_ratio<5'050'783'699, 1'000'000'000> * mag_power<10, -27> * joule / tesla> {} nuclear_magneton;
 
 // clang-format on
 
@@ -157,45 +157,45 @@ inline namespace codata2018 {
 
 // Boltzmann constant (CODATA 2018: 8.617333262e-11 MeV/K, exact)
 inline constexpr struct boltzmann_constant final :
-    named_unit<"k_B", mag_ratio<8'617'333'262, 1'000'000'000> * mag_power<10, -11> * si::mega<electronvolt> / kelvin> {} boltzmann_constant;
+    named_constant<"k_B", mag_ratio<8'617'333'262, 1'000'000'000> * mag_power<10, -11> * si::mega<electronvolt> / kelvin> {} boltzmann_constant;
 
 // Particle masses (CODATA 2018)
 inline constexpr struct electron_mass final :
-    named_unit<"m_e", mag_ratio<51'099'895, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} electron_mass;
+    named_constant<"m_e", mag_ratio<51'099'895, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} electron_mass;
 
 inline constexpr struct proton_mass final :
-    named_unit<"m_p", mag_ratio<938'272'08816, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} proton_mass;
+    named_constant<"m_p", mag_ratio<938'272'08816, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} proton_mass;
 
 inline constexpr struct neutron_mass final :
-    named_unit<"m_n", mag_ratio<93'956'542'052, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} neutron_mass;
+    named_constant<"m_n", mag_ratio<93'956'542'052, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} neutron_mass;
 
 // Atomic mass unit (CODATA 2018)
 inline constexpr struct atomic_mass_unit final :
-    named_unit<"u", mag_ratio<93'149'410'242, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} atomic_mass_unit;
+    named_constant<"u", mag_ratio<93'149'410'242, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} atomic_mass_unit;
 
 // Fine structure constant (CODATA 2018: 7.2973525693e-3)
 inline constexpr struct fine_structure_constant final :
-    named_unit<symbol_text{u8"α", "alpha"}, mag_ratio<72'973'525'693, 10'000'000'000> * mag_power<10, -3> * one> {} fine_structure_constant;
+    named_constant<symbol_text{u8"α", "alpha"}, mag_ratio<72'973'525'693, 10'000'000'000> * mag_power<10, -3> * one> {} fine_structure_constant;
 
 // Classical electron radius (CODATA 2018: 2.8179403262e-15 m)
 inline constexpr struct classical_electron_radius final :
-    named_unit<"r_e", mag_ratio<28'179'403'262, 10'000'000'000> * mag_power<10, -15> * meter> {} classical_electron_radius;
+    named_constant<"r_e", mag_ratio<28'179'403'262, 10'000'000'000> * mag_power<10, -15> * meter> {} classical_electron_radius;
 
 // Electron Compton wavelength (CODATA 2018: 2.42631023867e-12 m)
 inline constexpr struct electron_compton_wavelength final :
-    named_unit<symbol_text{u8"λ_C", "lambda_C"}, mag_ratio<242'631'023'867, 100'000'000'000> * mag_power<10, -12> * meter> {} electron_compton_wavelength;
+    named_constant<symbol_text{u8"λ_C", "lambda_C"}, mag_ratio<242'631'023'867, 100'000'000'000> * mag_power<10, -12> * meter> {} electron_compton_wavelength;
 
 // Bohr radius (CODATA 2018: 5.29177210903e-11 m)
 inline constexpr struct bohr_radius final :
-    named_unit<"a_0", mag_ratio<529'177'210'903, 100'000'000'000> * mag_power<10, -11> * meter> {} bohr_radius;
+    named_constant<"a_0", mag_ratio<529'177'210'903, 100'000'000'000> * mag_power<10, -11> * meter> {} bohr_radius;
 
 // Bohr magneton (CODATA 2018: 9.2740100783e-24 J/T)
 inline constexpr struct bohr_magneton final :
-    named_unit<symbol_text{u8"μ_B", "mu_B"}, mag_ratio<92'740'100'783, 10'000'000'000> * mag_power<10, -24> * joule / tesla> {} bohr_magneton;
+    named_constant<symbol_text{u8"μ_B", "mu_B"}, mag_ratio<92'740'100'783, 10'000'000'000> * mag_power<10, -24> * joule / tesla> {} bohr_magneton;
 
 // Nuclear magneton (CODATA 2018: 5.0507837461e-27 J/T)
 inline constexpr struct nuclear_magneton final :
-    named_unit<symbol_text{u8"μ_N", "mu_N"}, mag_ratio<50'507'837'461, 10'000'000'000> * mag_power<10, -27> * joule / tesla> {} nuclear_magneton;
+    named_constant<symbol_text{u8"μ_N", "mu_N"}, mag_ratio<50'507'837'461, 10'000'000'000> * mag_power<10, -27> * joule / tesla> {} nuclear_magneton;
 
 // clang-format on
 
@@ -211,40 +211,40 @@ using codata2018::boltzmann_constant;
 
 // Particle masses (CODATA 2022)
 inline constexpr struct electron_mass final :
-    named_unit<"m_e", mag_ratio<51'099'895'069, 100'000'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} electron_mass;
+    named_constant<"m_e", mag_ratio<51'099'895'069, 100'000'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} electron_mass;
 
 inline constexpr struct proton_mass final :
-    named_unit<"m_p", mag_ratio<93'827'208'943, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} proton_mass;
+    named_constant<"m_p", mag_ratio<93'827'208'943, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} proton_mass;
 
 inline constexpr struct neutron_mass final :
-    named_unit<"m_n", mag_ratio<93'956'542'194, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} neutron_mass;
+    named_constant<"m_n", mag_ratio<93'956'542'194, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} neutron_mass;
 
 // Atomic mass unit (CODATA 2022)
 inline constexpr struct atomic_mass_unit final :
-    named_unit<"u", mag_ratio<93'149'410'372, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} atomic_mass_unit;
+    named_constant<"u", mag_ratio<93'149'410'372, 100'000'000> * si::mega<electronvolt> / square(speed_of_light_in_vacuum)> {} atomic_mass_unit;
 
 // Fine structure constant (CODATA 2022: 7.2973525643e-3)
 inline constexpr struct fine_structure_constant final :
-    named_unit<symbol_text{u8"α", "alpha"}, mag_ratio<72'973'525'643, 10'000'000'000> * mag_power<10, -3> * one> {} fine_structure_constant;
+    named_constant<symbol_text{u8"α", "alpha"}, mag_ratio<72'973'525'643, 10'000'000'000> * mag_power<10, -3> * one> {} fine_structure_constant;
 
 // Classical electron radius (CODATA 2022: 2.8179403205e-15 m)
 inline constexpr struct classical_electron_radius final :
-    named_unit<"r_e", mag_ratio<28'179'403'205, 10'000'000'000> * mag_power<10, -15> * meter> {} classical_electron_radius;
+    named_constant<"r_e", mag_ratio<28'179'403'205, 10'000'000'000> * mag_power<10, -15> * meter> {} classical_electron_radius;
 
 // Electron Compton wavelength (CODATA 2022: 2.42631023867e-12 m - same as 2018)
 using codata2018::electron_compton_wavelength;
 
 // Bohr radius (CODATA 2022: 5.29177210544e-11 m)
 inline constexpr struct bohr_radius final :
-    named_unit<"a_0", mag_ratio<529'177'210'544, 100'000'000'000> * mag_power<10, -11> * meter> {} bohr_radius;
+    named_constant<"a_0", mag_ratio<529'177'210'544, 100'000'000'000> * mag_power<10, -11> * meter> {} bohr_radius;
 
 // Bohr magneton (CODATA 2022: 9.2740100657e-24 J/T)
 inline constexpr struct bohr_magneton final :
-    named_unit<symbol_text{u8"μ_B", "mu_B"}, mag_ratio<92'740'100'657, 10'000'000'000> * mag_power<10, -24> * joule / tesla> {} bohr_magneton;
+    named_constant<symbol_text{u8"μ_B", "mu_B"}, mag_ratio<92'740'100'657, 10'000'000'000> * mag_power<10, -24> * joule / tesla> {} bohr_magneton;
 
 // Nuclear magneton (CODATA 2022: 5.0507837393e-27 J/T)
 inline constexpr struct nuclear_magneton final :
-    named_unit<symbol_text{u8"μ_N", "mu_N"}, mag_ratio<50'507'837'393, 10'000'000'000> * mag_power<10, -27> * joule / tesla> {} nuclear_magneton;
+    named_constant<symbol_text{u8"μ_N", "mu_N"}, mag_ratio<50'507'837'393, 10'000'000'000> * mag_power<10, -27> * joule / tesla> {} nuclear_magneton;
 
 // clang-format on
 
