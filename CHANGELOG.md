@@ -9,7 +9,70 @@ This page documents the version history and changes for the **mp-units** library
 ### 2.6.0 <small>TBD</small> { id="2.6.0" }
 
 - (!) feat: `pi` and `π` is now a unit constant
+- (!) feat: natural units reworked from scratch
+- (!) feat: IAU system definition improved
+- feat: comparisons against literal `0`
+- feat: `hep` system refactored to be similar to leading projects in the HEP domain
+- feat: `hep` system extended with new constants and specialized quantities
+- feat: `unit_for`, `reference_for`, and `rep_for` added
+- feat: type conversions improved to raise compile-time warnings on truncation
+- feat: dimensionless quantities with unit one can now be created with `quantity_spec::op(Val)`
+        explicit conversions
+- feat: explicit construction from number enabled for `dimensionless` subkinds
+- feat: quantity hierarchies improved
+- feat: `dim_angle` text symbol changed to `α`
+- feat: missing unit symbols added for cases where the unit and symbol have the same identifier
+- feat: `league` symbol set to `lea`
+- feat: `si2019` namespace made inline
+- feat: typographic system extended
+- feat: astronomy system added
+- feat: explicit `quantity_spec` conversions added for `quantity_point`
 - (!) refactor: `pi` magnitude constant renamed to `pi_c`
+- (!) refactor: `international` system renamed to `yard_pound`
+- refactor: CGS <-> SI interop improved with using declarations
+- refactor: `isq::time` swapped with `isq::duration`
+- refactor: deprecation warnings now include the release version
+- refactor: representation concepts cleanup
+- refactor: `quantity_spec` call operator constraints improved
+- refactor: `quantity_cast` constraints improved
+- fix: dimensionless quantities truncation prevention fixed
+- fix: clang-18 workaround for pragmas not working in a C++ module build
+- fix: `normal_stress` and `shear_stress` fixed to have `stress` as a parent
+- fix: `mechanical_energy` requires a very generic equation that overrides the one from `mechanical_work`
+- fix: `fathom` definition fixed and moved to `yard_pound` system
+- fix: `quantity_cast` support fixed for `quantity_point`
+- test: multiply syntax unit tests added
+- test: `gravitational_potential_energy` definition updated to match ISQ
+- test: `fathom` test moved to `yard_pound`
+- build: deprecation comments added to CMake file for `format.h` and `ostream.h`
+- ci: `build_policy` and CI detection support added to `check_all.sh`
+- ci: environment tests moved to `validate_environment.sh` script
+- chore: `site/` subdirectory added to `.gitignore`
+- chore: persistency for conan and pipx packages added to devcontainer
+- docs: systems reference documentation generator added
+- docs: HEP system description added
+- docs: "Safety Features" chapter added
+- docs: "Yard-Pound Systems" chapter added
+- docs: IAU and astronomy systems documentation added
+- docs: ISQ, SI, and CGS systems documentation added
+- docs: "Using Custom Representation Types" chapter added
+- docs: "Pure Dimensional Analysis" chapter added
+- docs: How-to Guides improved
+- docs: "Creating distinct quantity kinds with `is_kind`" chapter added
+- docs: "Strongly-Typed Counts" workshop added
+- docs: incremental migration workshop added
+- docs: workshops restructured into subdirectories
+- docs: "New Systems Documentation Generator" blog post added
+- docs: interactive learning blog post added
+- docs: quantity hierarchies added to User's Guide
+- docs: multiple new workshops added (tutorials 9–12)
+- docs: "Type Safety in Practice" chapter updated
+- docs: IEC 80000 renamed to IEC in documentation
+- docs: "Use Cases" renamed to "How-to Guides"
+- docs: "Obtaining Metadata" renamed to "Type Introspection"
+- docs: documentation TOC restructured
+- docs: total_energy example added
+- docs: "AI-Generated Contributions" chapter added to CONTRIBUTING
 
 ### 2.5.0 <small>December 24, 2025</small> { id="2.5.0" }
 
