@@ -365,7 +365,9 @@ class SystemsParser:
         self._parse_quantities(content, system, str(header_file))
         # Detect inline subnamespaces early so other parsers can use this information
         self._detect_inline_subnamespaces(content, system)
-        self._parse_constants(content, system, str(header_file))  # Parse constants before units so using declarations can find them
+        self._parse_constants(
+            content, system, str(header_file)
+        )  # Parse constants before units so using declarations can find them
         self._parse_units(content, system, str(header_file))
         self._parse_point_origins(content, system, str(header_file))
         self._parse_prefixes(content, system, str(header_file))
@@ -494,10 +496,14 @@ class SystemsParser:
         return None
 
     def _get_nested_namespace(
-        self, content: str, match_pos: int, system_namespace: str, include_inline: bool = False
+        self,
+        content: str,
+        match_pos: int,
+        system_namespace: str,
+        include_inline: bool = False,
     ) -> Optional[str]:
         """Detect if a match is inside a nested namespace and return the nested namespace name
-        
+
         Args:
             content: The content to search
             match_pos: Position of the match
@@ -1004,7 +1010,7 @@ class SystemsParser:
                     )
                     system.constants.append(alias_constant)
                     break
-            
+
             if not is_constant:
                 # Create a unit alias
                 unit = Unit(
@@ -1170,11 +1176,13 @@ class SystemsParser:
 
     def _parse_constants(self, content: str, system: SystemInfo, file: str):
         """Parse named_constant definitions"""
-        # Pattern 1: (inline constexpr)? struct NAME final : named_constant<symbol_text{u8"unicode", "ascii"}, ...> {} NAME;
+        # Pattern 1: (inline constexpr)? struct NAME final :
+        # named_constant<symbol_text{u8"unicode", "ascii"}, ...> {} NAME;
         constant_pattern_text = (
             r"(?:inline\s+constexpr\s+)?struct\s+(\w+)\s+final\s*:\s*"
-            r'named_constant<symbol_text\{u8"([^"]+)"(?:\s*/\*[^*]*\*/)?\s*,\s*'
-            r'"([^"]+)"\},\s*(.+?)>\s*\{\}\s*(\w+)\s*;'
+            r'named_constant<symbol_text\{u8"([^"]+)"'
+            r'(?:\s*/\*[^*]*\*/)?\s*,\s*"([^"]+)"\},\s*(.+?)>\s*\{\}\s*'
+            r"(\w+)\s*;"
         )
 
         # Pattern 2: (inline constexpr)? struct NAME final : named_constant<"symbol", ...> {} NAME;
@@ -1199,14 +1207,15 @@ class SystemsParser:
             # Detect nested namespace (including inline namespaces for proper documentation)
             match_pos = match.start()
             nested_ns = self._get_nested_namespace(
-                content, match_pos, system.namespace if system.namespace else "", include_inline=True
+                content,
+                match_pos,
+                system.namespace if system.namespace else "",
+                include_inline=True,
             )
             full_namespace = (
                 f"mp_units::{system.namespace}::{nested_ns}"
                 if nested_ns and system.namespace
-                else f"mp_units::{system.namespace}"
-                if system.namespace
-                else "mp_units"
+                else f"mp_units::{system.namespace}" if system.namespace else "mp_units"
             )
 
             constant = Constant(
@@ -1230,14 +1239,15 @@ class SystemsParser:
             # Detect nested namespace (including inline namespaces for proper documentation)
             match_pos = match.start()
             nested_ns = self._get_nested_namespace(
-                content, match_pos, system.namespace if system.namespace else "", include_inline=True
+                content,
+                match_pos,
+                system.namespace if system.namespace else "",
+                include_inline=True,
             )
             full_namespace = (
                 f"mp_units::{system.namespace}::{nested_ns}"
                 if nested_ns and system.namespace
-                else f"mp_units::{system.namespace}"
-                if system.namespace
-                else "mp_units"
+                else f"mp_units::{system.namespace}" if system.namespace else "mp_units"
             )
 
             constant = Constant(
@@ -1313,7 +1323,7 @@ class SystemsParser:
                     # Handle core system where namespace is just "mp_units"
                     if target_system_name == "mp_units":
                         target_system_name = ""
-                    
+
                     if target_system_name == system.namespace:
                         alias_target_display = target_origin.name
                     else:
@@ -1358,7 +1368,7 @@ class SystemsParser:
                     # Handle core system where namespace is just "mp_units"
                     if target_system_name == "mp_units":
                         target_system_name = ""
-                    
+
                     if target_system_name == system.namespace:
                         alias_target_display = target_quantity.name
                     else:
@@ -1405,7 +1415,7 @@ class SystemsParser:
                     # Handle core system where namespace is just "mp_units"
                     if target_system_name == "mp_units":
                         target_system_name = ""
-                    
+
                     if target_system_name == system.namespace:
                         alias_target_display = target_constant.name
                     else:
@@ -1448,7 +1458,7 @@ class SystemsParser:
                     # Handle core system where namespace is just "mp_units"
                     if target_system_name == "mp_units":
                         target_system_name = ""
-                    
+
                     if target_system_name == system.namespace:
                         alias_target_display = target_unit.name
                     else:
@@ -1510,7 +1520,10 @@ class SystemsParser:
                     for constant in system.constants:
                         if constant.name == entity_name:
                             # Only match if this constant is in an inline subnamespace or has no subnamespace
-                            if not constant.subnamespace or constant.subnamespace in system.inline_subnamespaces:
+                            if (
+                                not constant.subnamespace
+                                or constant.subnamespace in system.inline_subnamespaces
+                            ):
                                 if symbol_name not in constant.unit_symbols:
                                     constant.unit_symbols.append(symbol_name)
                                 break  # Only match the first eligible constant
@@ -2389,11 +2402,15 @@ class DocumentationGenerator:
                 # For inline namespaces, only show the qualified version (not the parent namespace access)
                 if constant.subnamespace:
                     if system.namespace:
-                        display_namespace = f"{system.namespace}::{constant.subnamespace}"
+                        display_namespace = (
+                            f"{system.namespace}::{constant.subnamespace}"
+                        )
                     else:
                         display_namespace = f"mp_units::{constant.subnamespace}"
                 else:
-                    display_namespace = system.namespace if system.namespace else "mp_units"
+                    display_namespace = (
+                        system.namespace if system.namespace else "mp_units"
+                    )
 
                 all_constants.append(
                     (constant.name, sys_key, display_namespace, constant)
@@ -2410,13 +2427,9 @@ class DocumentationGenerator:
             ):
                 # Determine anchor - include subnamespace prefix if present
                 anchor = (
-                    f"{constant.subnamespace}-{name}"
-                    if constant.subnamespace
-                    else name
+                    f"{constant.subnamespace}-{name}" if constant.subnamespace else name
                 )
-                f.write(
-                    f"- [`{name}` ({display_ns})](systems/{sys_key}.md#{anchor})\n"
-                )
+                f.write(f"- [`{name}` ({display_ns})](systems/{sys_key}.md#{anchor})\n")
 
             f.write(f"\n**Total constants:** {len(all_constants)}\n")
 
@@ -2834,10 +2847,14 @@ class DocumentationGenerator:
                             return f"{constant.subnamespace}::{constant.name}"
                         return constant.name
 
-                    for constant in sorted(system.constants, key=get_constant_display_name):
+                    for constant in sorted(
+                        system.constants, key=get_constant_display_name
+                    ):
                         # Determine display name with subnamespace prefix if present
                         if constant.subnamespace:
-                            constant_display = f"{constant.subnamespace}::{constant.name}"
+                            constant_display = (
+                                f"{constant.subnamespace}::{constant.name}"
+                            )
                             anchor_id = f"{constant.subnamespace}-{constant.name}"
                         else:
                             constant_display = constant.name
@@ -2851,7 +2868,8 @@ class DocumentationGenerator:
                                 constant.alias_target, system
                             )
                             f.write(
-                                f'| <span id="{anchor_id}"></span><code>{constant_display_with_breaks}</code> | — | — | '
+                                f'| <span id="{anchor_id}"></span><code>'
+                                f"{constant_display_with_breaks}</code> | — | — | "
                                 f"alias to {alias_target_linked} |\n"
                             )
                         else:
@@ -2875,7 +2893,7 @@ class DocumentationGenerator:
 
                     # Collect inline subnamespaces used by both units and constants
                     inline_subns_used = set()
-                    
+
                     # Check units for inline namespaces
                     for unit in regular_units:
                         if unit.origin_namespace:
@@ -2886,12 +2904,15 @@ class DocumentationGenerator:
                                 subns = parts[-1]
                                 if subns in system.inline_subnamespaces:
                                     inline_subns_used.add(subns)
-                    
+
                     # Check constants for inline namespaces
                     for constant in system.constants:
-                        if constant.subnamespace and constant.subnamespace in system.inline_subnamespaces:
+                        if (
+                            constant.subnamespace
+                            and constant.subnamespace in system.inline_subnamespaces
+                        ):
                             inline_subns_used.add(constant.subnamespace)
-                    
+
                     # Write admonition if any inline namespaces are used
                     if inline_subns_used:
                         f.write("\n")
