@@ -50,11 +50,11 @@ import std;
 #include <compare>  // IWYU pragma: export
 #include <concepts>
 #include <limits>
-#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #if MP_UNITS_HOSTED
 #include <locale>
+#include <stdexcept>
 #endif
 #endif
 #endif
