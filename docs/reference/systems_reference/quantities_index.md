@@ -185,6 +185,7 @@ Alphabetical list of all quantities.
 - [`heat` (isq)](systems/isq.md#heat)
 - [`heat_capacity` (isq)](systems/isq.md#heat_capacity)
 - [`heat_flow_rate` (isq)](systems/isq.md#heat_flow_rate)
+- [`height` (hep)](systems/hep.md#height)
 - [`height` (isq)](systems/isq.md#height)
 - [`illuminance` (hep)](systems/hep.md#illuminance)
 - [`impact_parameter` (hep)](systems/hep.md#impact_parameter)
@@ -499,7 +500,8 @@ Alphabetical list of all quantities.
 - [`wavelength` (isq)](systems/isq.md#wavelength)
 - [`wavenumber` (isq)](systems/isq.md#wavenumber)
 - [`weight` (isq)](systems/isq.md#weight)
+- [`width` (hep)](systems/hep.md#width)
 - [`width` (isq)](systems/isq.md#width)
 - [`work` (isq)](systems/isq.md#work)
 
-**Total quantities:** 496
+**Total quantities:** 498

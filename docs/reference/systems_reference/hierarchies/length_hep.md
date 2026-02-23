@@ -16,6 +16,8 @@ flowchart LR
     hep_length --- hep_displacement
     hep_position_vector["<b><a href="../../systems/hep/#position_vector" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">hep::position_vector</a></b>"]
     hep_displacement --- hep_position_vector
+    hep_height["<b><a href="../../systems/hep/#height" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">hep::height</a></b>"]
+    hep_length --- hep_height
     hep_impact_parameter["<b><a href="../../systems/hep/#impact_parameter" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">hep::impact_parameter</a></b>"]
     hep_length --- hep_impact_parameter
     hep_interaction_length["<b><a href="../../systems/hep/#interaction_length" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">hep::interaction_length</a></b>"]
@@ -36,4 +38,6 @@ flowchart LR
     hep_length --- hep_vertex_position
     hep_wavelength["<b><a href="../../systems/hep/#wavelength" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">hep::wavelength</a></b>"]
     hep_length --- hep_wavelength
+    hep_width["<b><a href="../../systems/hep/#width" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">hep::width</a></b>"]
+    hep_length --- hep_width
 ```

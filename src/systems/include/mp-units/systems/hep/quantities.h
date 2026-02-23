@@ -68,6 +68,8 @@ QUANTITY_SPEC(area, pow<2>(length));
 QUANTITY_SPEC(volume, pow<3>(length));
 
 // specialized length quantities - each represents distinct physical concepts
+QUANTITY_SPEC(width, length);        // transverse dimension of a detector element or geometry
+QUANTITY_SPEC(height, length);       // longitudinal dimension of a detector element or geometry
 QUANTITY_SPEC(path_length, length);  // actual distance traveled along a trajectory
 QUANTITY_SPEC(displacement, length,
               quantity_character::vector);     // shortest distance between two points (vector)

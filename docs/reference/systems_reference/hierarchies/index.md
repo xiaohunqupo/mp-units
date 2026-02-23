@@ -29,7 +29,7 @@ This section contains all quantity hierarchy trees across all systems, grouped b
 
 ## Dimension: L
 
-- [`hep::length`](length_hep.md) (14 quantities)
+- [`hep::length`](length_hep.md) (16 quantities)
 - [`isq::length`](length_isq.md) (13 quantities)
 
 ## Dimension: M

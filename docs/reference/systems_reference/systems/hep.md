@@ -59,6 +59,7 @@
 | <span id="force"></span><code>force</code> | Real | EL⁻¹ | ✓ | <code>[force](#force)</code> | — | <code>[energy](#energy) / <wbr>[length](#length)</code> | [view](../hierarchies/force_hep.md) |
 | <span id="frequency"></span><code>frequency</code> | Real | T⁻¹ | ✓ | <code>[frequency](#frequency)</code> | — | <code>inverse([duration](#duration))</code> | [view](../hierarchies/frequency_hep.md) |
 | <span id="half_life"></span><code>half_<wbr>life</code> | Real | T | — | <code>[duration](#duration)</code> | <code>[lifetime](#lifetime)</code> | — | [view](../hierarchies/duration_hep.md) |
+| <span id="height"></span><code>height</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="illuminance"></span><code>illuminance</code> | Real | α²IL⁻² | ✓ | <code>[illuminance](#illuminance)</code> | — | <code>[luminous_<wbr>flux](#luminous_flux) / <wbr>pow<2>([length](#length))</code> | [view](../hierarchies/illuminance.md) |
 | <span id="impact_parameter"></span><code>impact_<wbr>parameter</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="inductance"></span><code>inductance</code> | Real | ET²Q⁻² | ✓ | <code>[inductance](#inductance)</code> | — | <code>pow<2>([duration](#duration)) * <wbr>[energy](#energy) / <wbr>pow<2>([electric_<wbr>charge](#electric_charge))</code> | [view](../hierarchies/inductance_hep.md) |
@@ -110,6 +111,7 @@
 | <span id="vertex_position"></span><code>vertex_<wbr>position</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="volume"></span><code>volume</code> | Real | L³ | ✓ | <code>[volume](#volume)</code> | — | <code>pow<3>([length](#length))</code> | [view](../hierarchies/volume_hep.md) |
 | <span id="wavelength"></span><code>wavelength</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
+| <span id="width"></span><code>width</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 
 ## Units
 
