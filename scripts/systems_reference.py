@@ -1296,7 +1296,9 @@ class SystemsParser:
                 target_sys_name = target_name.split("::")[0]
                 target_lookup = target_name.split("::")[-1]
                 # Map namespace aliases (e.g., "mp_units" -> "core")
-                target_sys_key = namespace_to_system_key.get(target_sys_name, target_sys_name)
+                target_sys_key = namespace_to_system_key.get(
+                    target_sys_name, target_sys_name
+                )
                 search_systems = (
                     [self.systems.get(target_sys_key)]
                     if target_sys_key in self.systems
@@ -1670,8 +1672,9 @@ class SystemsParser:
             )
             system.units.append(unit)
 
-
-    def _parse_using_namespace_directives(self, content: str, system: SystemInfo, file: str):
+    def _parse_using_namespace_directives(
+        self, content: str, system: SystemInfo, file: str
+    ):
         """Parse 'using namespace' directives that import entire namespaces as aliases.
 
         Handles patterns like:
@@ -1730,7 +1733,9 @@ class SystemsParser:
                         file=file,
                         is_kind=qty.is_kind,
                         alias_target=f"{source_ns}::{qty.name}",
-                        character=qty.character if hasattr(qty, "character") else "Real",
+                        character=(
+                            qty.character if hasattr(qty, "character") else "Real"
+                        ),
                     )
                     system.quantities.append(alias_qty)
 
@@ -2277,9 +2282,7 @@ class DocumentationGenerator:
 
         # Determine the qualified root name (e.g., "angular::angle")
         qualified_root = (
-            f"{first_namespace}::{root_name}"
-            if first_namespace
-            else root_name
+            f"{first_namespace}::{root_name}" if first_namespace else root_name
         )
 
         # Augment with quantities from OTHER systems that belong to this hierarchy
