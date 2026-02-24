@@ -131,8 +131,8 @@ quantity dose_equivalent = 2.0 * Sv;
 // auto result = absorbed_dose + dose_equivalent;           // ❌ Compile-time error!
 // Error: cannot add absorbed dose and dose equivalent (both L²T⁻², but different kinds)
 
-// QuantityOf<isq::absorbed_dose> auto d = 2.5 * Sv;        // ❌ Compile-time error!
-// Error: cannot initialize absorbed dose with dose equivalent (different quantity kinds)
+// auto equal = (absorbed_dose == dose_equivalent);          // ❌ Compile-time error!
+// Error: cannot compare absorbed dose and dose equivalent
 ```
 
 Examples of quantities with same dimension but different kinds:
@@ -140,6 +140,8 @@ Examples of quantities with same dimension but different kinds:
 - **Absorbed dose (Gy)** and **Dose equivalent (Sv)**: Both `length²/time²`
 - **Frequency (Hz)** and **Activity (Bq)**: Both `1/time`
 - **Plane angle (rad)** and **Solid angle (sr)**: Both dimensionless
+- **Area (m²)** and **Fuel consumption (L/100km)**: Both `length²` (dimension L²)
+- **Distance (m)** and **Wavelength (m)**: Both `length`
 
 !!! important
 
@@ -159,15 +161,15 @@ Examples of quantities with same dimension but different kinds:
 // Quantity Type: Hierarchy prevents mixing energy types
 void process_kinetic(quantity<isq::kinetic_energy[J]> ke) { /* ... */ }
 
-quantity pe = isq::potential_energy(100 * J);
+// Quantity Type: Ingredient validation requires specific quantity types
+constexpr quantity g0 = isq::acceleration_of_free_fall(1 * si::standard_gravity);
+quantity<isq::height[m]> height = 5 * m;
+quantity<gravitational_potential_energy[J]> Ep = mass * g0 * height;  
+// quantity<gravitational_potential_energy[J]> wrong = mass * g0 * width;  // ❌ Compile-time error!
+// Error: cannot form gravitational potential energy from width
+
 // process_kinetic(pe);                                                   // ❌ Compile-time error!
 // Error: cannot pass potential_energy where kinetic_energy is required
-
-// Quantity Type: Ingredient validation requires specific quantity types
-quantity<isq::height[m]> h = 5 * m;
-quantity<gravitational_potential_energy[J]> Ep = mass * g * height;  
-// quantity<gravitational_potential_energy[J]> wrong = mass * g * width;  // ❌ Compile-time error!
-// Error: cannot form gravitational potential energy from width
 
 // Quantity Character: Vector vs. scalar distinction
 quantity<isq::speed[m/s]> speed = cartesian_vector{1, 2, 3} * m / s;      // ❌ Compile-time error!
