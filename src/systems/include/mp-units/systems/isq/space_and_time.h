@@ -49,7 +49,7 @@ QUANTITY_SPEC(curvature, inverse(radius_of_curvature));
 QUANTITY_SPEC(volume, pow<3>(length));
 QUANTITY_SPEC(rotational_displacement, angular_measure, path_length / radius);
 inline constexpr auto angular_displacement = rotational_displacement;
-QUANTITY_SPEC(phase_angle, angular_measure);
+QUANTITY_SPEC(phase_angle, angular_measure, is_kind);
 QUANTITY_SPEC(speed, length / time);                      // differs from ISO 80000
 QUANTITY_SPEC(velocity, speed, displacement / duration);  // vector  // differs from ISO 80000
 QUANTITY_SPEC(acceleration, velocity / duration);         // vector

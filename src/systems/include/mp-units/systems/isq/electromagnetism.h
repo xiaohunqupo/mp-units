@@ -149,7 +149,7 @@ QUANTITY_SPEC(susceptance, admittance, quantity_character::real_scalar);
 QUANTITY_SPEC(apparent_admittance, admittance, quantity_character::real_scalar);
 QUANTITY_SPEC(quality_factor, dimensionless, reactance / resistance);
 QUANTITY_SPEC(loss_factor, dimensionless, inverse(quality_factor));
-QUANTITY_SPEC(loss_angle, angular_measure);
+QUANTITY_SPEC(loss_angle, angular_measure, is_kind);
 QUANTITY_SPEC(active_power, isq::power, inverse(period) * (instantaneous_power * time));
 QUANTITY_SPEC(complex_power, voltage_phasor* electric_current_phasor);  // complex // separate kind
 QUANTITY_SPEC(apparent_power, complex_power, quantity_character::real_scalar);
