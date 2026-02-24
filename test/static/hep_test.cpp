@@ -131,10 +131,19 @@ static_assert(verify(hep::phase, real_scalar, one));  // phase is dimensionless 
 
 // Test quantity hierarchy conversions
 // All specialized lengths can be implicitly converted up the hierarchy to generic length
-static_assert(implicitly_convertible(hep::radiation_length, hep::length));
 static_assert(implicitly_convertible(hep::decay_length, hep::length));
-static_assert(implicitly_convertible(hep::interaction_length, hep::length));
 static_assert(implicitly_convertible(hep::nuclear_interaction_length, hep::interaction_length));
+
+// is_kind quantities form subkinds
+static_assert(!implicitly_convertible(hep::radiation_length, hep::length));
+static_assert(explicitly_convertible(hep::radiation_length, hep::length));
+static_assert(!implicitly_convertible(hep::interaction_length, hep::length));
+static_assert(explicitly_convertible(hep::interaction_length, hep::length));
+
+static_assert(!implicitly_convertible(hep::proper_time, hep::duration));
+static_assert(explicitly_convertible(hep::proper_time, hep::duration));
+static_assert(!implicitly_convertible(hep::coordinate_time, hep::duration));
+static_assert(explicitly_convertible(hep::coordinate_time, hep::duration));
 
 // But cannot be implicitly converted between each other (different physical concepts!)
 static_assert(!implicitly_convertible(hep::radiation_length, hep::decay_length));
@@ -142,8 +151,6 @@ static_assert(!implicitly_convertible(hep::decay_length, hep::interaction_length
 static_assert(!implicitly_convertible(hep::impact_parameter, hep::vertex_position));
 
 // Specialized times: proper_time vs coordinate_time are distinct
-static_assert(implicitly_convertible(hep::proper_time, hep::duration));
-static_assert(implicitly_convertible(hep::coordinate_time, hep::duration));
 static_assert(!implicitly_convertible(hep::proper_time, hep::coordinate_time));
 static_assert(!implicitly_convertible(hep::coordinate_time, hep::proper_time));
 
