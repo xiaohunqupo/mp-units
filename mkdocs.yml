@@ -291,8 +291,7 @@ nav:
               - admittance: reference/systems_reference/hierarchies/admittance.md
               - amount_of_substance (hep): reference/systems_reference/hierarchies/amount_of_substance_hep.md
               - amount_of_substance (isq): reference/systems_reference/hierarchies/amount_of_substance_isq.md
-              - angle (angular): reference/systems_reference/hierarchies/angle_angular.md
-              - angle (hep): reference/systems_reference/hierarchies/angle_hep.md
+              - angle: reference/systems_reference/hierarchies/angle.md
               - angular_acceleration (isq): reference/systems_reference/hierarchies/angular_acceleration_isq.md
               - angular_acceleration (isq_angle): reference/systems_reference/hierarchies/angular_acceleration_isq_angle.md
               - angular_frequency (isq): reference/systems_reference/hierarchies/angular_frequency_isq.md
@@ -423,8 +422,7 @@ nav:
               - second_axial_moment_of_area: reference/systems_reference/hierarchies/second_axial_moment_of_area.md
               - second_polar_moment_of_area: reference/systems_reference/hierarchies/second_polar_moment_of_area.md
               - section_modulus: reference/systems_reference/hierarchies/section_modulus.md
-              - solid_angle (angular): reference/systems_reference/hierarchies/solid_angle_angular.md
-              - solid_angle (hep): reference/systems_reference/hierarchies/solid_angle_hep.md
+              - solid_angle: reference/systems_reference/hierarchies/solid_angle.md
               - solid_angular_measure: reference/systems_reference/hierarchies/solid_angular_measure.md
               - specific_energy: reference/systems_reference/hierarchies/specific_energy.md
               - specific_entropy: reference/systems_reference/hierarchies/specific_entropy.md

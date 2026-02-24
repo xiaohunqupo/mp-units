@@ -41,7 +41,7 @@
 | <span id="azimuthal_angle"></span><code>azimuthal_<wbr>angle</code> | Real | α | — | <code>[angular::angle](#angle)</code> | <code>[angular::angle](#angle)</code> | — | [view](../hierarchies/angle.md) |
 | <span id="binding_energy"></span><code>binding_<wbr>energy</code> | Real | E | — | <code>[energy](#energy)</code> | <code>[energy](#energy)</code> | — | [view](../hierarchies/energy_hep.md) |
 | <span id="center_of_mass_energy"></span><code>center_<wbr>of_<wbr>mass_<wbr>energy</code> | Real | E | — | <code>[energy](#energy)</code> | <code>[energy](#energy)</code> | — | [view](../hierarchies/energy_hep.md) |
-| <span id="coordinate_time"></span><code>coordinate_<wbr>time</code> | Real | T | — | <code>[duration](#duration)</code> | <code>[duration](#duration)</code> | — | [view](../hierarchies/duration_hep.md) |
+| <span id="coordinate_time"></span><code>coordinate_<wbr>time</code> | Real | T | ✓ | <code>[coordinate_<wbr>time](#coordinate_time)</code> | <code>[duration](#duration)</code> | — | [view](../hierarchies/duration_hep.md) |
 | <span id="cross_section"></span><code>cross_<wbr>section</code> | Real | L² | — | <code>[area](#area)</code> | <code>[area](#area)</code> | — | [view](../hierarchies/area_hep.md) |
 | <span id="decay_constant"></span><code>decay_<wbr>constant</code> | Real | T⁻¹ | — | <code>[frequency](#frequency)</code> | <code>[frequency](#frequency)</code> | — | [view](../hierarchies/frequency_hep.md) |
 | <span id="decay_length"></span><code>decay_<wbr>length</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
@@ -63,7 +63,7 @@
 | <span id="illuminance"></span><code>illuminance</code> | Real | α²IL⁻² | ✓ | <code>[illuminance](#illuminance)</code> | — | <code>[luminous_<wbr>flux](#luminous_flux) / <wbr>pow<2>([length](#length))</code> | [view](../hierarchies/illuminance.md) |
 | <span id="impact_parameter"></span><code>impact_<wbr>parameter</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="inductance"></span><code>inductance</code> | Real | ET²Q⁻² | ✓ | <code>[inductance](#inductance)</code> | — | <code>pow<2>([duration](#duration)) * <wbr>[energy](#energy) / <wbr>pow<2>([electric_<wbr>charge](#electric_charge))</code> | [view](../hierarchies/inductance_hep.md) |
-| <span id="interaction_length"></span><code>interaction_<wbr>length</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
+| <span id="interaction_length"></span><code>interaction_<wbr>length</code> | Real | L | ✓ | <code>[interaction_<wbr>length](#interaction_length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="invariant_mass"></span><code>invariant_<wbr>mass</code> | Real | ET²L⁻² | — | <code>[mass](#mass)</code> | <code>[mass](#mass)</code> | — | [view](../hierarchies/mass_hep.md) |
 | <span id="ionization_energy"></span><code>ionization_<wbr>energy</code> | Real | E | — | <code>[energy](#energy)</code> | <code>[energy](#energy)</code> | — | [view](../hierarchies/energy_hep.md) |
 | <span id="kinetic_energy"></span><code>kinetic_<wbr>energy</code> | Real | E | — | <code>[energy](#energy)</code> | <code>[total_<wbr>energy](#total_energy)</code> | — | [view](../hierarchies/energy_hep.md) |
@@ -79,7 +79,7 @@
 | <span id="mean_lifetime"></span><code>mean_<wbr>lifetime</code> | Real | T | — | <code>[duration](#duration)</code> | <code>[lifetime](#lifetime)</code> | — | [view](../hierarchies/duration_hep.md) |
 | <span id="missing_energy"></span><code>missing_<wbr>energy</code> | Real | E | — | <code>[energy](#energy)</code> | <code>[energy](#energy)</code> | — | [view](../hierarchies/energy_hep.md) |
 | <span id="momentum"></span><code>momentum</code> | Real | ETL⁻¹ | ✓ | <code>[momentum](#momentum)</code> | — | <code>[energy](#energy) * <wbr>[duration](#duration) / <wbr>[length](#length)</code> | [view](../hierarchies/momentum_hep.md) |
-| <span id="nuclear_interaction_length"></span><code>nuclear_<wbr>interaction_<wbr>length</code> | Real | L | — | <code>[length](#length)</code> | <code>[interaction_<wbr>length](#interaction_length)</code> | — | [view](../hierarchies/length_hep.md) |
+| <span id="nuclear_interaction_length"></span><code>nuclear_<wbr>interaction_<wbr>length</code> | Real | L | — | <code>[interaction_<wbr>length](#interaction_length)</code> | <code>[interaction_<wbr>length](#interaction_length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="number_density"></span><code>number_<wbr>density</code> | Real | L⁻³ | ✓ | <code>[number_<wbr>density](#number_density)</code> | — | <code>inverse([volume](#volume))</code> | [view](../hierarchies/number_density.md) |
 | <span id="opening_angle"></span><code>opening_<wbr>angle</code> | Real | α | — | <code>[angular::angle](#angle)</code> | <code>[angular::angle](#angle)</code> | — | [view](../hierarchies/angle.md) |
 | <span id="path_length"></span><code>path_<wbr>length</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
@@ -88,9 +88,9 @@
 | <span id="position_vector"></span><code>position_<wbr>vector</code> | Vector | L | — | <code>[length](#length)</code> | <code>[displacement](#displacement)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="power"></span><code>power</code> | Real | ET⁻¹ | ✓ | <code>[power](#power)</code> | — | <code>[energy](#energy) / <wbr>[duration](#duration)</code> | [view](../hierarchies/power_hep.md) |
 | <span id="pressure"></span><code>pressure</code> | Real | EL⁻³ | ✓ | <code>[pressure](#pressure)</code> | — | <code>[energy](#energy) / <wbr>pow<3>([length](#length))</code> | [view](../hierarchies/pressure_hep.md) |
-| <span id="proper_time"></span><code>proper_<wbr>time</code> | Real | T | — | <code>[duration](#duration)</code> | <code>[duration](#duration)</code> | — | [view](../hierarchies/duration_hep.md) |
+| <span id="proper_time"></span><code>proper_<wbr>time</code> | Real | T | ✓ | <code>[proper_<wbr>time](#proper_time)</code> | <code>[duration](#duration)</code> | — | [view](../hierarchies/duration_hep.md) |
 | <span id="proper_velocity"></span><code>proper_<wbr>velocity</code> | Vector | LT⁻¹ | ✓ | <code>[proper_<wbr>velocity](#proper_velocity)</code> | — | <code>[displacement](#displacement) / <wbr>[proper_<wbr>time](#proper_time)</code> | [view](../hierarchies/proper_velocity.md) |
-| <span id="radiation_length"></span><code>radiation_<wbr>length</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
+| <span id="radiation_length"></span><code>radiation_<wbr>length</code> | Real | L | ✓ | <code>[radiation_<wbr>length](#radiation_length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="radius"></span><code>radius</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="range"></span><code>range</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="reduced_mass"></span><code>reduced_<wbr>mass</code> | Real | ET²L⁻² | — | <code>[mass](#mass)</code> | <code>[mass](#mass)</code> | — | [view](../hierarchies/mass_hep.md) |
@@ -110,7 +110,7 @@
 | <span id="velocity"></span><code>velocity</code> | Vector | LT⁻¹ | ✓ | <code>[velocity](#velocity)</code> | — | <code>[displacement](#displacement) / <wbr>[duration](#duration)</code> | [view](../hierarchies/velocity.md) |
 | <span id="vertex_position"></span><code>vertex_<wbr>position</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="volume"></span><code>volume</code> | Real | L³ | ✓ | <code>[volume](#volume)</code> | — | <code>pow<3>([length](#length))</code> | [view](../hierarchies/volume_hep.md) |
-| <span id="wavelength"></span><code>wavelength</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
+| <span id="wavelength"></span><code>wavelength</code> | Real | L | ✓ | <code>[wavelength](#wavelength)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="width"></span><code>width</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 
 ## Units

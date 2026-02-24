@@ -72,27 +72,28 @@ QUANTITY_SPEC(width, length);        // transverse dimension of a detector eleme
 QUANTITY_SPEC(height, length);       // longitudinal dimension of a detector element or geometry
 QUANTITY_SPEC(path_length, length);  // actual distance traveled along a trajectory
 QUANTITY_SPEC(displacement, length,
-              quantity_character::vector);     // shortest distance between two points (vector)
-QUANTITY_SPEC(position_vector, displacement);  // position relative to origin (vector)
-QUANTITY_SPEC(interaction_length, length);     // mean distance before interaction with matter
-QUANTITY_SPEC(radiation_length, length);       // mean distance over which electron energy falls to 1/e
+              quantity_character::vector);           // shortest distance between two points (vector)
+QUANTITY_SPEC(position_vector, displacement);        // position relative to origin (vector)
+QUANTITY_SPEC(interaction_length, length, is_kind);  // mean distance before nuclear interaction with matter
+QUANTITY_SPEC(radiation_length, length, is_kind);    // mean distance over which electron energy falls to 1/e
 QUANTITY_SPEC(nuclear_interaction_length,
               interaction_length);        // mean distance before nuclear interaction
 QUANTITY_SPEC(mean_free_path, length);    // average distance between collisions
 QUANTITY_SPEC(impact_parameter, length);  // closest approach distance in collisions
 QUANTITY_SPEC(decay_length, length);      // distance traveled before particle decay
 QUANTITY_SPEC(vertex_position, length);   // position of collision/decay vertex
-QUANTITY_SPEC(wavelength, length);        // electromagnetic or de Broglie wavelength
-QUANTITY_SPEC(radius, length);            // radial distance from axis/center
-QUANTITY_SPEC(range, length);             // distance a particle travels before stopping
+QUANTITY_SPEC(wavelength, length,
+              is_kind);         // electromagnetic or de Broglie wavelength (wave property, not geometric distance)
+QUANTITY_SPEC(radius, length);  // radial distance from axis/center
+QUANTITY_SPEC(range, length);   // distance a particle travels before stopping
 
 // specialized time quantities
-QUANTITY_SPEC(proper_time, duration);      // time in particle's rest frame
-QUANTITY_SPEC(coordinate_time, duration);  // time in lab/detector frame
-QUANTITY_SPEC(lifetime, duration);         // decay time quantities
-QUANTITY_SPEC(half_life, lifetime);        // time for 50% decay (t₁/₂)
-QUANTITY_SPEC(mean_lifetime, lifetime);    // average decay time (τ = t₁/₂/ln(2))
-QUANTITY_SPEC(time_of_flight, duration);   // time for particle to traverse distance
+QUANTITY_SPEC(proper_time, duration, is_kind);      // time in particle's rest frame (Lorentz-invariant)
+QUANTITY_SPEC(coordinate_time, duration, is_kind);  // time in lab/detector frame (frame-dependent)
+QUANTITY_SPEC(lifetime, duration);                  // decay time quantities
+QUANTITY_SPEC(half_life, lifetime);                 // time for 50% decay (t₁/₂)
+QUANTITY_SPEC(mean_lifetime, lifetime);             // average decay time (τ = t₁/₂/ln(2))
+QUANTITY_SPEC(time_of_flight, duration);            // time for particle to traverse distance
 
 // electric
 QUANTITY_SPEC(electric_current, electric_charge / duration);

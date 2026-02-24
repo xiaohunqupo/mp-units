@@ -60,7 +60,7 @@ QUANTITY_SPEC(time_constant, duration);
 QUANTITY_SPEC(rotation, dimensionless);
 QUANTITY_SPEC(rotational_frequency, rotation / duration);
 QUANTITY_SPEC(angular_frequency, phase_angle / duration);
-QUANTITY_SPEC(wavelength, length);
+QUANTITY_SPEC(wavelength, length, is_kind);
 QUANTITY_SPEC(repetency, inverse(wavelength));
 inline constexpr auto wavenumber = repetency;
 QUANTITY_SPEC(wave_vector, repetency, quantity_character::vector);

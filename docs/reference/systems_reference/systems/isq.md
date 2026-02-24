@@ -386,7 +386,7 @@
 | <span id="waiting_probability"></span><code>waiting_<wbr>probability</code> | Real | — | — | <code>[dimensionless](core.md#dimensionless)</code> | <code>[dimensionless](core.md#dimensionless)</code> | — | [view](../hierarchies/dimensionless.md) |
 | <span id="wave_impedance_in_vacuum"></span><code>wave_<wbr>impedance_<wbr>in_<wbr>vacuum</code> | Complex | L²MI⁻²T⁻³ | — | <code>[impedance](#impedance)</code> | <code>[impedance](#impedance)</code> | alias to [impedance_<wbr>of_<wbr>vacuum](#impedance_of_vacuum) | [view](../hierarchies/impedance.md) |
 | <span id="wave_vector"></span><code>wave_<wbr>vector</code> | Vector | L⁻¹ | — | <code>[repetency](#repetency)</code> | <code>[repetency](#repetency)</code> | — | [view](../hierarchies/repetency.md) |
-| <span id="wavelength"></span><code>wavelength</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_isq.md) |
+| <span id="wavelength"></span><code>wavelength</code> | Real | L | ✓ | <code>[wavelength](#wavelength)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_isq.md) |
 | <span id="wavenumber"></span><code>wavenumber</code> | Real | L⁻¹ | ✓ | <code>[repetency](#repetency)</code> | — | alias to [repetency](#repetency) | [view](../hierarchies/repetency.md) |
 | <span id="weight"></span><code>weight</code> | Vector | LMT⁻² | — | <code>[force](#force)</code> | <code>[force](#force)</code> | <code>[mass](#mass) * <wbr>[acceleration_<wbr>of_<wbr>free_<wbr>fall](#acceleration_of_free_fall)</code> | [view](../hierarchies/force_isq.md) |
 | <span id="width"></span><code>width</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_isq.md) |
