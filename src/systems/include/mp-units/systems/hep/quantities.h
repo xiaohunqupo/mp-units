@@ -29,6 +29,7 @@
 #pragma once
 
 #include <mp-units/bits/module_macros.h>
+#include <mp-units/systems/angular.h>
 
 // IWYU pragma: begin_exports
 #ifndef MP_UNITS_IN_MODULE_INTERFACE
@@ -39,10 +40,11 @@
 MP_UNITS_EXPORT
 namespace mp_units::hep {
 
+using namespace ::mp_units::angular;
+
 // dimensions of base quantities
 // clang-format off
 inline constexpr struct dim_length final : base_dimension<"L"> {} dim_length;
-inline constexpr struct dim_angle final : base_dimension<symbol_text{u8"α", "a"}> {} dim_angle;
 inline constexpr struct dim_time final : base_dimension<"T"> {} dim_time;
 inline constexpr struct dim_electric_charge final : base_dimension<"Q"> {} dim_electric_charge;
 inline constexpr struct dim_energy final : base_dimension<"E"> {} dim_energy;
@@ -53,8 +55,6 @@ inline constexpr struct dim_luminous_intensity final : base_dimension<"I"> {} di
 
 // base quantities
 QUANTITY_SPEC(length, dim_length);
-QUANTITY_SPEC(angle, dim_angle);
-QUANTITY_SPEC(solid_angle, pow<2>(angle));
 QUANTITY_SPEC(duration, dim_time);
 QUANTITY_SPEC(electric_charge, dim_electric_charge);
 QUANTITY_SPEC(energy, dim_energy);

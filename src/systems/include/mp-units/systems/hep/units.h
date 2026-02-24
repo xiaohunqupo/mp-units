@@ -42,13 +42,13 @@ MP_UNITS_EXPORT
 namespace mp_units::hep {
 
 // dimensionless units
-inline constexpr auto pi = π;
+inline constexpr auto pi = ::mp_units::pi;
 inline constexpr auto twopi = mag<2> * pi;
 inline constexpr auto halfpi = mag_ratio<1, 2> * pi;
 inline constexpr auto pi2 = square(pi);
-inline constexpr auto perCent = percent;
-inline constexpr auto perThousand = per_mille;
-inline constexpr auto perMillion = parts_per_million;
+inline constexpr auto perCent = ::mp_units::percent;
+inline constexpr auto perThousand = ::mp_units::per_mille;
+inline constexpr auto perMillion = ::mp_units::parts_per_million;
 
 // named units
 // clang-format off
@@ -58,9 +58,6 @@ inline constexpr auto fermi = si::femto<meter>;
 inline constexpr struct astronomical_unit final : named_unit<"au", mag<149'597'870'700> * meter> {} astronomical_unit;
 inline constexpr struct barn final : named_unit<"b", mag_power<10, -28> * square(meter)> {} barn;
 inline constexpr struct liter final : named_unit<"L", cubic(si::deci<meter>)> {} liter;
-inline constexpr struct radian final : named_unit<"rad", kind_of<angle>> {} radian;
-inline constexpr struct degree final : named_unit<symbol_text{u8"°", "deg"}, mag_ratio<1, 180> * π * radian> {} degree;
-inline constexpr struct steradian final : named_unit<"sr", square(radian)> {} steradian;
 inline constexpr struct parsec final : named_unit<"pc", astronomical_unit / (mag_ratio<1, 3600> * degree)> {} parsec;
 inline constexpr struct second final : named_unit<"s", kind_of<duration>> {} second;
 inline constexpr struct hertz final : named_unit<"Hz", one / second, kind_of<frequency>> {} hertz;
