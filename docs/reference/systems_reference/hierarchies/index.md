@@ -57,8 +57,7 @@ This section contains all quantity hierarchy trees across all systems, grouped b
 
 ## Dimension: α
 
-- [`angular::angle`](angle_angular.md) (1 quantity)
-- [`hep::angle`](angle_hep.md) (5 quantities)
+- [`angular::angle`](angle.md) (1 quantity)
 
 ## Dimension: E²
 
@@ -87,8 +86,7 @@ This section contains all quantity hierarchy trees across all systems, grouped b
 
 ## Dimension: α²
 
-- [`angular::solid_angle`](solid_angle_angular.md) (1 quantity)
-- [`hep::solid_angle`](solid_angle_hep.md) (1 quantity)
+- [`angular::solid_angle`](solid_angle.md) (1 quantity)
 - [`isq_angle::solid_angular_measure`](solid_angular_measure.md) (1 quantity)
 
 ## Dimension: E⁻¹
@@ -486,4 +484,4 @@ This section contains all quantity hierarchy trees across all systems, grouped b
 
 - [`isq::pressure_coefficient`](pressure_coefficient.md) (1 quantity)
 
-**Total hierarchies:** 181
+**Total hierarchies:** 179

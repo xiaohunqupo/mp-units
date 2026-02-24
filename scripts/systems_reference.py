@@ -373,6 +373,7 @@ class SystemsParser:
         self._parse_prefixes(content, system, str(header_file))
         self._parse_aliases(content, system, str(header_file))
         self._parse_using_declarations(content, system, str(header_file))
+        self._parse_using_namespace_directives(content, system, str(header_file))
         # Parse unit_symbols after inline namespace detection so it can match correctly
         self._parse_unit_symbols(content, system)
 
@@ -1273,9 +1274,17 @@ class SystemsParser:
         else:
             main_content = content
 
+        # Map namespace names to system keys (core is stored under "core", not "mp_units")
+        namespace_to_system_key = {
+            "mp_units": "core",
+        }
+
         for match in re.finditer(alias_pattern, main_content):
             alias_name = match.group(1)
             target_name = match.group(2).strip()
+
+            # Strip leading :: from fully-qualified names (e.g., ::mp_units::pi -> mp_units::pi)
+            target_name = re.sub(r"^::", "", target_name)
 
             # Skip if it has angle brackets (it's a unit definition, not an alias)
             if "<" in target_name:
@@ -1286,9 +1295,11 @@ class SystemsParser:
                 # Qualified name - look only in specified system
                 target_sys_name = target_name.split("::")[0]
                 target_lookup = target_name.split("::")[-1]
+                # Map namespace aliases (e.g., "mp_units" -> "core")
+                target_sys_key = namespace_to_system_key.get(target_sys_name, target_sys_name)
                 search_systems = (
-                    [self.systems.get(target_sys_name)]
-                    if target_sys_name in self.systems
+                    [self.systems.get(target_sys_key)]
+                    if target_sys_key in self.systems
                     else []
                 )
             else:
@@ -1658,6 +1669,130 @@ class SystemsParser:
                 is_alias=True,
             )
             system.units.append(unit)
+
+
+    def _parse_using_namespace_directives(self, content: str, system: SystemInfo, file: str):
+        """Parse 'using namespace' directives that import entire namespaces as aliases.
+
+        Handles patterns like:
+            using namespace ::mp_units::angular;
+            using namespace mp_units::angular;
+
+        For each matching system found in self.systems, creates alias entries for
+        all entities (dimensions, quantities, units, prefixes, constants, point_origins)
+        so they appear in the current system's documentation as aliases.
+        """
+        # Match: using namespace [::] mp_units :: SYSTEM_NAME ;
+        using_ns_pattern = r"using\s+namespace\s+(?:::)?mp_units::(\w+)\s*;"
+
+        for match in re.finditer(using_ns_pattern, content):
+            source_ns = match.group(1)  # e.g., "angular"
+
+            # Skip self-references
+            if source_ns == system.namespace:
+                continue
+
+            # Only process directives at the top level of the system namespace
+            # (not inside a nested subnamespace)
+            subns = self._get_nested_namespace(content, match.start(), system.namespace)
+            if subns:
+                continue
+
+            # The source system must already be parsed
+            source_system = self.systems.get(source_ns)
+            if not source_system:
+                continue
+
+            system.imported_systems.add(source_ns)
+
+            # --- Import dimensions ---
+            existing_dim_names = {d.name for d in system.dimensions}
+            for dim in source_system.dimensions:
+                if dim.name not in existing_dim_names:
+                    alias_dim = Dimension(
+                        name=dim.name,
+                        symbol=dim.symbol,
+                        namespace=f"mp_units::{system.namespace}",
+                        file=file,
+                    )
+                    system.dimensions.append(alias_dim)
+
+            # --- Import quantities as aliases ---
+            existing_qty_names = {q.name for q in system.quantities}
+            for qty in source_system.quantities:
+                if qty.name not in existing_qty_names:
+                    alias_qty = Quantity(
+                        name=qty.name,
+                        parent=qty.parent,
+                        dimension=qty.dimension,
+                        equation=qty.equation,
+                        namespace=f"mp_units::{system.namespace}",
+                        file=file,
+                        is_kind=qty.is_kind,
+                        alias_target=f"{source_ns}::{qty.name}",
+                        character=qty.character if hasattr(qty, "character") else "Real",
+                    )
+                    system.quantities.append(alias_qty)
+
+            # --- Import units as aliases ---
+            existing_unit_names = {u.name for u in system.units}
+            for unit in source_system.units:
+                if unit.name not in existing_unit_names:
+                    alias_unit = Unit(
+                        name=unit.name,
+                        symbol=unit.symbol,
+                        unit_symbols=list(unit.unit_symbols),
+                        definition=unit.definition,
+                        namespace=f"mp_units::{system.namespace}",
+                        file=file,
+                        is_base=unit.is_base,
+                        subnamespace=None,
+                        origin_namespace=None,
+                        alias_target=f"{source_ns}::{unit.name}",
+                    )
+                    system.units.append(alias_unit)
+
+            # --- Import prefixes ---
+            existing_prefix_names = {p.name for p in system.prefixes}
+            for prefix in source_system.prefixes:
+                if prefix.name not in existing_prefix_names:
+                    alias_prefix = Prefix(
+                        name=prefix.name,
+                        symbol=prefix.symbol,
+                        definition=prefix.definition,
+                        namespace=f"mp_units::{system.namespace}",
+                        file=file,
+                    )
+                    system.prefixes.append(alias_prefix)
+
+            # --- Import constants as aliases ---
+            existing_const_names = {c.name for c in system.constants}
+            for constant in source_system.constants:
+                if constant.name not in existing_const_names:
+                    alias_const = Constant(
+                        name=constant.name,
+                        symbol=constant.symbol,
+                        unit_symbols=list(constant.unit_symbols),
+                        definition=constant.definition,
+                        namespace=f"mp_units::{system.namespace}",
+                        file=file,
+                        alias_target=f"{source_ns}::{constant.name}",
+                    )
+                    system.constants.append(alias_const)
+
+            # --- Import point origins as aliases ---
+            existing_origin_names = {o.name for o in system.point_origins}
+            for origin in source_system.point_origins:
+                if origin.name not in existing_origin_names:
+                    alias_origin = PointOrigin(
+                        name=origin.name,
+                        origin_type=origin.origin_type,
+                        definition=origin.definition,
+                        namespace=f"mp_units::{system.namespace}",
+                        file=file,
+                        alias_target=f"{source_ns}::{origin.name}",
+                    )
+                    system.point_origins.append(alias_origin)
 
 
 class DocumentationGenerator:
@@ -2100,6 +2235,15 @@ class DocumentationGenerator:
 
         return hierarchy_count
 
+    @staticmethod
+    def _ns_display_name(ns: str) -> str:
+        """Convert a system namespace key to a human-readable display name"""
+        if ns == "isq_angle":
+            return "ISQ Angle"
+        if ns in ["cgs", "hep", "iau", "iec", "iec80000", "isq", "si", "usc"]:
+            return ns.upper()
+        return ns.replace("_", " ").title()
+
     def _generate_hierarchy_file(
         self,
         hierarchy_file: Path,
@@ -2108,10 +2252,12 @@ class DocumentationGenerator:
         cross_system: bool,
     ):
         """Generate a single hierarchy file"""
-        # Collect all quantities from the specified systems
+        # Collect all quantities from the primary (root-owning) systems
         all_quantities = []
+        primary_namespaces = set()
         for namespace, system in systems_info:
             all_quantities.extend(system.quantities)
+            primary_namespaces.add(namespace)
 
         # Get the root quantity from the first system (they should all be equivalent)
         first_namespace, first_system = systems_info[0]
@@ -2129,19 +2275,41 @@ class DocumentationGenerator:
         if not root_qty:
             return
 
+        # Determine the qualified root name (e.g., "angular::angle")
+        qualified_root = (
+            f"{first_namespace}::{root_name}"
+            if first_namespace
+            else root_name
+        )
+
+        # Augment with quantities from OTHER systems that belong to this hierarchy
+        # (identified by hierarchy_root matching the qualified root name)
+        extra_namespaces: set[str] = set()
+        existing_ids = {id(q) for q in all_quantities}
+        for ns, system in self.parser.systems.items():
+            if ns in primary_namespaces:
+                continue
+            for qty in system.quantities:
+                if (
+                    id(qty) not in existing_ids
+                    and not qty.alias_target
+                    and hasattr(qty, "hierarchy_root")
+                    and qty.hierarchy_root == qualified_root
+                ):
+                    all_quantities.append(qty)
+                    existing_ids.add(id(qty))
+                    extra_namespaces.add(ns)
+
         with open(hierarchy_file, "w") as hf:
             self._write_auto_generated_header(hf)
             hf.write(f"# {root_name} Hierarchy\n\n")
 
-            # List all systems contributing to this hierarchy
-            system_names = []
-            for ns, _ in systems_info:
-                if ns == "isq_angle":
-                    system_names.append("ISQ Angle")
-                elif ns in ["cgs", "hep", "iau", "iec", "iec80000", "isq", "si", "usc"]:
-                    system_names.append(ns.upper())
-                else:
-                    system_names.append(ns.replace("_", " ").title())
+            # List all systems contributing to this hierarchy (primary + extra)
+            contributing_namespaces = sorted(
+                primary_namespaces | extra_namespaces,
+                key=lambda ns: (ns not in primary_namespaces, ns),
+            )
+            system_names = [self._ns_display_name(ns) for ns in contributing_namespaces]
 
             if len(system_names) == 1:
                 hf.write(f"**System:** {system_names[0]}\n\n")

@@ -85,6 +85,7 @@ Alphabetical list of all units.
 - [`gill` (imperial)](systems/imperial.md#gill)
 - [`gill` (usc)](systems/usc.md#gill)
 - [`gradian` (angular)](systems/angular.md#gradian)
+- [`gradian` (hep)](systems/hep.md#gradian)
 - [`grain` (yard_pound)](systems/yard_pound.md#grain)
 - [`gram` (cgs)](systems/cgs.md#gram)
 - [`gram` (hep)](systems/hep.md#gram)
@@ -186,6 +187,7 @@ Alphabetical list of all units.
 - [`radian` (si)](systems/si.md#radian)
 - [`rankine` (usc)](systems/usc.md#rankine)
 - [`revolution` (angular)](systems/angular.md#revolution)
+- [`revolution` (hep)](systems/hep.md#revolution)
 - [`rod` (imperial)](systems/imperial.md#rod)
 - [`rod` (usc)](systems/usc.md#rod)
 - [`rod` (usc::survey1893)](systems/usc.md#survey1893-rod)
@@ -233,4 +235,4 @@ Alphabetical list of all units.
 - [`weber` (si)](systems/si.md#weber)
 - [`yard` (yard_pound)](systems/yard_pound.md#yard)
 
-**Total units:** 227
+**Total units:** 229

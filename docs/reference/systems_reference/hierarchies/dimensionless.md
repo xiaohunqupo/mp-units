@@ -3,7 +3,7 @@
 
 # dimensionless Hierarchy
 
-**Systems:** Core, ISQ, Natural, HEP
+**Systems:** Core, HEP, ISQ, Natural
 
 **Dimension:** dimensionless
 
