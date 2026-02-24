@@ -62,9 +62,9 @@ inline constexpr struct parsec final : named_unit<"pc", astronomical_unit / (mag
 inline constexpr struct second final : named_unit<"s", kind_of<duration>> {} second;
 inline constexpr struct hertz final : named_unit<"Hz", one / second, kind_of<frequency>> {} hertz;
 inline constexpr struct eplus final : named_unit<symbol_text{u8"e⁺", "e+"}, kind_of<electric_charge>> {} eplus;
-inline constexpr struct coulomb final : named_unit<"C", mag_ratio<1'602'176'634, 1'000'000'000> * eplus> {} coulomb;
+inline constexpr struct coulomb final : named_unit<"C", mag<6'241'509'074> * mag_power<10, 9> * eplus> {} coulomb;
 inline constexpr struct electronvolt final : named_unit<"eV", kind_of<energy>> {} electronvolt;
-inline constexpr struct joule final : named_unit<"J", electronvolt * eplus / coulomb> {} joule;
+inline constexpr struct joule final : named_unit<"J", electronvolt * coulomb / eplus> {} joule;
 inline constexpr struct gram final : named_unit<"g", mag_ratio<1, 1000> * joule * square(second) / square(meter)> {} gram;
 inline constexpr struct watt final : named_unit<"W", joule / second> {} watt;
 inline constexpr struct newton final : named_unit<"N", joule / meter> {} newton;
