@@ -125,7 +125,7 @@
 | <span id="barn"></span><code>barn</code> | b | `b` | <code>mag_power<10, -28> * <wbr>square([meter](#meter))</code> |
 | <span id="becquerel"></span><code>becquerel</code> | Bq | `Bq` | <code>[one](core.md#one) / <wbr>[second](#second)<br>kind: [activity](#activity)</code> |
 | <span id="candela"></span><code>candela</code> | cd | — | <code>kind: [luminous_<wbr>intensity](#luminous_intensity)</code> |
-| <span id="coulomb"></span><code>coulomb</code> | C | — | <code>mag_ratio<1'602'176'634, 1'000'000'000> * <wbr>[eplus](#eplus)</code> |
+| <span id="coulomb"></span><code>coulomb</code> | C | — | <code>mag<6'241'509'074> * <wbr>mag_power<10, 9> * <wbr>[eplus](#eplus)</code> |
 | <span id="curie"></span><code>curie</code> | Ci | `Ci` | <code>mag_ratio<37, 10> * <wbr>mag_power<10, 10> * <wbr>[becquerel](#becquerel)</code> |
 | <span id="degree"></span><code>degree</code> | — | — | alias to [angular::degree](angular.md#degree) |
 | <span id="electronvolt"></span><code>electronvolt</code> | eV | `eV` | <code>kind: [energy](#energy)</code> |
@@ -139,7 +139,7 @@
 | <span id="halfpi"></span><code>halfpi</code> | — | — | <code>mag_ratio<1, 2> * <wbr>[pi](#pi)</code> |
 | <span id="henry"></span><code>henry</code> | H | — | <code>[weber](#weber) / <wbr>[ampere](#ampere)</code> |
 | <span id="hertz"></span><code>hertz</code> | Hz | — | <code>[one](core.md#one) / <wbr>[second](#second)<br>kind: [frequency](#frequency)</code> |
-| <span id="joule"></span><code>joule</code> | J | — | <code>[electronvolt](#electronvolt) * <wbr>[eplus](#eplus) / <wbr>[coulomb](#coulomb)</code> |
+| <span id="joule"></span><code>joule</code> | J | — | <code>[electronvolt](#electronvolt) * <wbr>[coulomb](#coulomb) / <wbr>[eplus](#eplus)</code> |
 | <span id="kelvin"></span><code>kelvin</code> | K | — | <code>kind: [temperature](#temperature)</code> |
 | <span id="liter"></span><code>liter</code> | L | `L` | <code>cubic([si::deci](si.md#deci)<[meter](#meter)>)</code> |
 | <span id="lumen"></span><code>lumen</code> | lm | — | <code>[candela](#candela) * <wbr>[steradian](#steradian)</code> |

@@ -22,9 +22,9 @@ flowchart LR
     dimensionless --- isq_Poisson_number
     isq_angular_measure["<b><a href="../../systems/isq/#angular_measure" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">isq::angular_measure</a> 🔒</b><br><i>(<a href="../../systems/isq/#arc_length" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">arc_length</a> / <a href="../../systems/isq/#radius" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">radius</a>)</i>"]
     dimensionless --- isq_angular_measure
-    isq_loss_angle["<b><a href="../../systems/isq/#loss_angle" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">isq::loss_angle</a></b>"]
+    isq_loss_angle["<b><a href="../../systems/isq/#loss_angle" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">isq::loss_angle</a> 🔒</b>"]
     isq_angular_measure --- isq_loss_angle
-    isq_phase_angle["<b><a href="../../systems/isq/#phase_angle" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">isq::phase_angle</a></b>"]
+    isq_phase_angle["<b><a href="../../systems/isq/#phase_angle" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">isq::phase_angle</a> 🔒</b>"]
     isq_angular_measure --- isq_phase_angle
     isq_phase_difference["<b><a href="../../systems/isq/#phase_difference" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">isq::phase_difference</a></b>"]
     isq_phase_angle --- isq_phase_difference
