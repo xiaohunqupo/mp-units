@@ -220,10 +220,10 @@ nav:
   - How-to Guides:
       - How-to Guides: how_to_guides/index.md
       - Advanced Usage:
-          - Overview: how_to_guides/advanced_usage/index.md
+          - Advanced Usage Guides: how_to_guides/advanced_usage/index.md
           - Pure Dimensional Analysis: how_to_guides/advanced_usage/pure_dimensional_analysis.md
       - Integration:
-          - Overview: how_to_guides/integration/index.md
+          - Integration Guides: how_to_guides/integration/index.md
           - Working with Legacy Interfaces: how_to_guides/integration/working_with_legacy_interfaces.md
           - Using Custom Representation Types: how_to_guides/integration/using_custom_representation_types.md
           - Interoperability with Other Libraries: how_to_guides/integration/interoperability_with_other_libraries.md
@@ -253,7 +253,7 @@ nav:
       - Reference: reference/index.md
       - Cheat Sheet: reference/cheat_sheet.md
       - Systems Reference:
-          - Overview: reference/systems_reference/index.md
+          - Systems Reference: reference/systems_reference/index.md
           - Systems:
               - Angular: reference/systems_reference/systems/angular.md
               - Astronomy: reference/systems_reference/systems/astronomy.md
@@ -277,7 +277,7 @@ nav:
           - Constants: reference/systems_reference/constants_index.md
           - Point Origins: reference/systems_reference/point_origins_index.md
           - Quantity Hierarchies:
-              - Overview: reference/systems_reference/hierarchies/index.md
+              - Quantity Hierarchies: reference/systems_reference/hierarchies/index.md
               - Joule_Thomson_coefficient: reference/systems_reference/hierarchies/Joule_Thomson_coefficient.md
               - Massieu_function: reference/systems_reference/hierarchies/Massieu_function.md
               - Planck_function: reference/systems_reference/hierarchies/Planck_function.md

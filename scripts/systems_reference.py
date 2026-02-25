@@ -1904,7 +1904,7 @@ class DocumentationGenerator:
     def _build_systems_reference_yaml(self):
         """Build the YAML text for Systems Reference section"""
         lines = ["      - Systems Reference:\n"]
-        lines.append("          - Overview: reference/systems_reference/index.md\n")
+        lines.append("          - Systems Reference: reference/systems_reference/index.md\n")
         lines.append("          - Systems:\n")
 
         for namespace in sorted(self.parser.systems.keys()):
@@ -1938,7 +1938,7 @@ class DocumentationGenerator:
         # Add Quantity Hierarchies section
         lines.append("          - Quantity Hierarchies:\n")
         lines.append(
-            "              - Overview: reference/systems_reference/hierarchies/index.md\n"
+            "              - Quantity Hierarchies: reference/systems_reference/hierarchies/index.md\n"
         )
 
         # Collect all root quantities with their systems
