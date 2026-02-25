@@ -363,14 +363,14 @@ For complete API documentation including all available units, constants, and exa
 - **Particle Data Group**: [pdg.lbl.gov](https://pdg.lbl.gov) - Particle
   properties and fundamental constants used in Monte Carlo event generators
 
-- **CERN Software**:
-    - [CLHEP](https://gitlab.cern.ch/CLHEP/CLHEP) - Class Library for High Energy Physics
-    - [Gaudi](https://gitlab.cern.ch/gaudi/Gaudi) - Event processing framework
-    - [Geant4](https://gitlab.cern.ch/geant4/geant4) - Detector simulation toolkit
-    - [ROOT](https://github.com/root-project/root) - Data analysis framework
+- **[CERN Software](https://ep-dep-sft.web.cern.ch)**:
+    - [CLHEP](https://lcginfo.cern.ch/pkg/clhep) [[git](https://gitlab.cern.ch/CLHEP/CLHEP)] - Class Library for High Energy Physics
+    - [Gaudi](https://lcginfo.cern.ch/pkg/Gaudi) [[git](https://gitlab.cern.ch/gaudi/Gaudi)] - Event processing framework
+    - [Geant4](https://lcginfo.cern.ch/pkg/Geant4) [[git](https://gitlab.cern.ch/geant4/geant4)] - Detector simulation toolkit
+    - [ROOT](https://lcginfo.cern.ch/pkg/ROOT) [[git](https://github.com/root-project/root)] - Data analysis framework
 
-- **ATLAS Experiment**: [atlas.cern](https://atlas.cern) - Large Hadron
-  Collider experiment at CERN
+- **ATLAS Experiment**: [atlas.cern](https://atlas.cern) - Large Hadron Collider experiment
+  at CERN
 
 - **HEP Software Foundation**:
   [hepsoftwarefoundation.org](https://hepsoftwarefoundation.org/) -
