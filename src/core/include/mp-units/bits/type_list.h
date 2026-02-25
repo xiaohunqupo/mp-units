@@ -174,8 +174,6 @@ using type_list_join = type_list_join_impl<Lists...>::type;
 template<typename List, typename First, typename Second>
 struct type_list_split_impl;
 
-static_assert(__cpp_pack_indexing);
-
 #ifdef __cpp_pack_indexing
 
 // C++26: Direct pack indexing avoids building an indexed_type_list (N base classes)
