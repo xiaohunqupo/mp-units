@@ -25,11 +25,11 @@
 #include <mp-units/bits/hacks.h>
 
 // IWYU pragma: begin_exports
-#if MP_UNITS_HOSTED
-#include <mp-units/systems/si/chrono.h>
-#include <mp-units/systems/si/math.h>
-#include <mp-units/systems/si/prefix_utils.h>
+#include <mp-units/systems/si/constants.h>
+#include <mp-units/systems/si/prefixes.h>
+#include <mp-units/systems/si/units.h>
+
+#ifndef MP_UNITS_IN_MODULE_INTERFACE
+#include <mp-units/framework.h>
 #endif
-#include <mp-units/systems/si/core.h>
-#include <mp-units/systems/si/unit_symbols.h>
 // IWYU pragma: end_exports

@@ -13,7 +13,9 @@
 
 - `<mp-units/systems/si/chrono.h>`
 - `<mp-units/systems/si/constants.h>`
+- `<mp-units/systems/si/core.h>`
 - `<mp-units/systems/si/math.h>`
+- `<mp-units/systems/si/prefix_utils.h>`
 - `<mp-units/systems/si/prefixes.h>`
 - `<mp-units/systems/si/unit_symbols.h>`
 - `<mp-units/systems/si/units.h>`

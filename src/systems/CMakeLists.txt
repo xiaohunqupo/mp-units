@@ -41,6 +41,7 @@ add_mp_units_module(
             include/mp-units/systems/isq/space_and_time.h
             include/mp-units/systems/isq/thermodynamics.h
             include/mp-units/systems/si/constants.h
+            include/mp-units/systems/si/core.h
             include/mp-units/systems/si/prefixes.h
             include/mp-units/systems/si/unit_symbols.h
             include/mp-units/systems/si/units.h
@@ -77,6 +78,7 @@ if(NOT MP_UNITS_API_FREESTANDING)
                include/mp-units/systems/angular/math.h
                include/mp-units/systems/si/math.h
                include/mp-units/systems/si/chrono.h
+               include/mp-units/systems/si/prefix_utils.h
     )
 endif()
 

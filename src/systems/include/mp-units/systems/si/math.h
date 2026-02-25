@@ -25,7 +25,7 @@
 #include <mp-units/bits/requires_hosted.h>
 //
 #include <mp-units/bits/module_macros.h>
-#include <mp-units/systems/isq/space_and_time.h>
+#include <mp-units/systems/isq/si_quantities.h>
 #include <mp-units/systems/si/units.h>
 
 #ifndef MP_UNITS_IN_MODULE_INTERFACE
