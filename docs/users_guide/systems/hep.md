@@ -5,8 +5,8 @@
 The **High Energy Physics (HEP)** system provides a complete **System of
 Quantities** and **System of Units**, along with physical constants, tailored for
 particle physics, nuclear physics, and high-energy experiments. It was designed
-with input from CERN and the ATLAS experiment to address real-world requirements
-of large-scale HEP software projects.
+with input from members of the high energy physics community to address real-world
+requirements of large-scale HEP software projects.
 
 The **mp-units** HEP system implements:
 
@@ -22,12 +22,13 @@ The **mp-units** HEP system implements:
 - **Interoperability**: Designed to work alongside existing HEP frameworks
   (CLHEP, Gaudi, Geant4, ROOT) during migration
 
-!!! info "Collaboration with CERN"
+!!! info "Collaboration with the HEP community"
 
-    The HEP system design was developed through consultation with the ATLAS Offline Software
-    team at CERN. The goal is to provide a modern, type-safe units library that can eventually
-    replace hand-maintained unit constants across multiple HEP frameworks while maintaining
-    compatibility during migration.
+    The HEP system design was developed through consultation with members of the HEP community.
+    The goal is to provide a modern, type-safe units library that can eventually replace
+    hand-maintained unit constants across multiple HEP frameworks while maintaining compatibility
+    during migration.
+
 
 ## System of Quantities
 
