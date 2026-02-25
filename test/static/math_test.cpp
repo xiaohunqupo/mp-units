@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 #include <mp-units/math.h>  // IWYU pragma: keep
+#include <mp-units/systems/isq.h>
 #include <mp-units/systems/si.h>
 #include <mp-units/systems/yard_pound.h>
 
