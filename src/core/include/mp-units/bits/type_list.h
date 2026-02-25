@@ -72,7 +72,7 @@ using type_list_map = type_list_map_impl<From, To>::type;
 
 
 // element
-#ifdef __cpp_pack_indexing
+#if defined(__cpp_pack_indexing) && __cplusplus > 202302
 
 // C++26: Pack indexing (P2662) gives a compiler-native O(1) element access,
 // eliminating the indexed_type_list multiple-inheritance machinery entirely.
@@ -174,7 +174,7 @@ using type_list_join = type_list_join_impl<Lists...>::type;
 template<typename List, typename First, typename Second>
 struct type_list_split_impl;
 
-#ifdef __cpp_pack_indexing
+#if defined(__cpp_pack_indexing) && __cplusplus > 202302
 
 // C++26: Direct pack indexing avoids building an indexed_type_list (N base classes)
 // and then re-traversing it for every element of both output lists.
