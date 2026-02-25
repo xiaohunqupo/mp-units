@@ -267,21 +267,20 @@ recommendations, leading to inconsistencies.
 
 ### The Problem
 
-As noted by ATLAS Offline Software Coordinator John Chapman:
+As noted by John Chapman (currently one of the ATLAS Offline Software coordinators):
 
-!!! quote "CERN Feedback"
+!!! quote "HEP community feedback"
 
-    "The values used in the physical constants headers are taken from the CODATA recommendations.
-    Note that these do change over time! This is particularly a problem for applications where
-    it is then not clear which version of a constant should be used. It also, unfortunately,
-    ties any updates to physical constants to releases of CLHEP, ROOT, Gaudi or Geant4.
-
-    For example, currently the head versions of CLHEP and Gaudi use the 2018 CODATA
-    recommendations and the head version of ROOT uses the 2022 CODATA recommendations.
-
+    "HEP Software stacks typically rely on multiple projects. Each of which define their
+    physical constants based on the CODATA recommendations. (Note these do change over time!)
+    
+    Currently the CODATA version is fixed for a particular release of a project, which can
+    lead to (small) inconsistencies, for example if an older version of one project needs to
+    be used, but another project needs to be updated to pick up new functionality.
+    
     I would like to find a way to avoid this. If they all depended on a single external
-    library which we could easily configure to use a particular set of recommendations, then
-    that would make things easier."
+    library which we could easily configure to use a particular set of recommendations,
+    then that would make things easier."
 
 ### The Solution: CODATA Namespaces
 
