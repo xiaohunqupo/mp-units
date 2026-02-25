@@ -281,6 +281,161 @@ inline constexpr struct luminous_efficacy final :
     This allows for future updates if the constants are ever redefined.
 
 
+## Header Files
+
+When not using C++ modules, the SI system is exposed through a set of headers under
+`<mp-units/systems/si/...>`. Choose the headers that match your use case to keep
+compile times as low as possible.
+
+### Umbrella header — `<mp-units/systems/si.h>`
+
+```cpp
+#include <mp-units/systems/si.h>
+```
+
+The all-in-one header. It pulls in everything the SI system offers:
+
+- all SI units, prefixes and SI-defining constants
+- all short-name unit symbols (e.g. `m`, `km`, `Hz`) via `si::unit_symbols`
+- `<chrono>` interoperability (hosted only)
+- SI `math.h` overloads of `<cmath>` functions for quantities (hosted only)
+- `invoke_with_prefixed` and `prefix_range` utilities (hosted only)
+
+**When to use:** application code where SI breadth is more important than
+individual include cost — the typical choice for `.cpp` files.
+
+### Lean umbrella — `<mp-units/systems/si/core.h>`
+
+```cpp
+#include <mp-units/systems/si/core.h>
+```
+
+A lighter umbrella that includes units, prefixes, and constants but deliberately
+omits `unit_symbols.h`, `chrono.h`, `math.h`, and `prefix_utils.h`.
+
+**When to use:** library headers (`.h`/`.hpp`) that use SI units internally but
+should not force `unit_symbols`, `<chrono>`, or `<cmath>` on their users. Also the
+recommended include for other system headers that build on top of SI (e.g. CGS,
+imperial) to avoid bringing in the full symbol table.
+
+### Individual headers
+
+Use these when you need only a specific slice of the SI system.
+
+- `<mp-units/systems/si/prefixes.h>`
+
+    Provides only the 24 SI prefix class templates (`quecto_` … `quetta_`) and their
+    corresponding variable templates (`quecto` … `quetta`).
+    Does **not** bring in any units, constants, or runtime utilities.
+
+    ```cpp
+    #include <mp-units/systems/si/prefixes.h>
+    ```
+
+    **When to use:** when defining a new unit system that needs SI prefixes but none
+    of the SI units themselves (e.g., HEP).
+
+- `<mp-units/systems/si/units.h>`
+
+    Provides all SI named units (base and derived) and the non-SI units accepted for
+    use with the SI (`non_si::minute`, `non_si::hour`, `non_si::litre`, …).
+    Depends on `prefixes.h` and the ISQ quantity definitions.
+
+    ```cpp
+    #include <mp-units/systems/si/units.h>
+    ```
+
+- `<mp-units/systems/si/constants.h>`
+
+    Provides the seven SI-defining constants from the 2019 redefinition
+    (`si::speed_of_light_in_vacuum`, `si::planck_constant`, etc.) in the inline
+    namespace `si::si2019` and a few more directly in the `si` namespace.
+    Depends on `units.h`.
+
+    ```cpp
+    #include <mp-units/systems/si/constants.h>
+    ```
+
+- `<mp-units/systems/si/unit_symbols.h>`
+
+    Opens `namespace mp_units::si::unit_symbols` and defines short-name `inline
+    constexpr` variables for every SI unit and all its prefixed variants
+    (`m`, `km`, `mm`, …, `Hz`, `kHz`, …).
+
+    !!! warning
+
+        This header instantiates a large number of prefixed units at parse time,
+        which is the main compile-time cost of `si.h`.
+
+    ```cpp
+    #include <mp-units/systems/si/unit_symbols.h>
+
+    using namespace mp_units::si::unit_symbols;
+    quantity length = 5 * km;
+    ```
+
+    **When to use:** `.cpp` files or translation units where the concise symbol
+    syntax is desired. Avoid in widely-included library headers.
+
+- `<mp-units/systems/si/chrono.h>` *(hosted only)*
+
+    Provides interoperability between `std::chrono::duration` / `std::chrono::time_point`
+    and **mp-units** quantities. Includes `<chrono>`.
+
+    ```cpp
+    #include <mp-units/systems/si/chrono.h>
+
+    auto d = std::chrono::seconds{5};
+    quantity t = d;  // quantity<si::second, std::int64_t>
+    ```
+
+- `<mp-units/systems/si/math.h>` *(hosted only)*
+
+    Provides quantity-aware overloads of the `<cmath>` transcendental and rounding
+    functions (`sin`, `cos`, `pow`, `sqrt`, `floor`, `ceil`, …) that are aware of
+    angular-measure semantics.
+
+    ```cpp
+    #include <mp-units/systems/si/math.h>
+
+    quantity angle = 30 * deg;
+    auto s = sin(angle);  // converts to radians internally
+    ```
+
+- `<mp-units/systems/si/prefix_utils.h>` *(hosted only)*
+
+    Provides the `prefix_range` enum and the `invoke_with_prefixed` function template,
+    which automatically selects the most readable SI prefix for a quantity and calls
+    a user-supplied functor with the rescaled value.
+
+    ```cpp
+    #include <mp-units/systems/si/prefix_utils.h>
+
+    invoke_with_prefixed([](auto q) { std::cout << q << "\n"; }, 0.005 * m, m);
+    // prints: 5 mm
+    ```
+
+### At a glance
+
+| Header              | Units | Prefixes | Constants | Symbols | chrono | math | prefix_utils |
+|---------------------|:-----:|:--------:|:---------:|:-------:|:------:|:----:|:------------:|
+| `si.h`              |   ✓   |    ✓     |     ✓     |    ✓    |   ✓    |  ✓   |      ✓       |
+| `si/core.h`         |   ✓   |    ✓     |     ✓     |    —    |   —    |  —   |      —       |
+| `si/prefixes.h`     |   —   |    ✓     |     —     |    —    |   —    |  —   |      —       |
+| `si/units.h`        |   ✓   |    ✓     |     —     |    —    |   —    |  —   |      —       |
+| `si/constants.h`    |   ✓   |    ✓     |     ✓     |    —    |   —    |  —   |      —       |
+| `si/unit_symbols.h` |   ✓   |    ✓     |     —     |    ✓    |   —    |  —   |      —       |
+| `si/chrono.h`       |   ✓   |    ✓     |     —     |    —    |   ✓    |  —   |      —       |
+| `si/math.h`         |   ✓   |    ✓     |     —     |    —    |   —    |  ✓   |      —       |
+| `si/prefix_utils.h` |   —   |    ✓     |     —     |    —    |   —    |  ✓   |      ✓       |
+
+!!! note "Freestanding environments"
+
+    Headers marked *hosted only* (`chrono.h`, `math.h`, `prefix_utils.h`) require a
+    hosted C++ standard library and are silently excluded when `MP_UNITS_HOSTED` is
+    not set. The remaining headers are safe to use in freestanding environments.
+
+
 ## Usage Examples
 
 ### Basic Calculations
