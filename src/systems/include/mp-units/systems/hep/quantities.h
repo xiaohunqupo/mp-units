@@ -83,8 +83,8 @@ QUANTITY_SPEC(impact_parameter, length);  // closest approach distance in collis
 QUANTITY_SPEC(decay_length, length);      // distance traveled before particle decay
 QUANTITY_SPEC(vertex_position, length);   // position of collision/decay vertex
 QUANTITY_SPEC(wavelength, length);        // electromagnetic or de Broglie wavelength
-QUANTITY_SPEC(radius, length);  // radial distance from axis/center
-QUANTITY_SPEC(range, length);   // distance a particle travels before stopping
+QUANTITY_SPEC(radius, length);            // radial distance from axis/center
+QUANTITY_SPEC(range, length);             // distance a particle travels before stopping
 
 // specialized time quantities
 QUANTITY_SPEC(proper_time, duration, is_kind);      // time in particle's rest frame (Lorentz-invariant)
