@@ -1904,7 +1904,9 @@ class DocumentationGenerator:
     def _build_systems_reference_yaml(self):
         """Build the YAML text for Systems Reference section"""
         lines = ["      - Systems Reference:\n"]
-        lines.append("          - Systems Reference: reference/systems_reference/index.md\n")
+        lines.append(
+            "          - Systems Reference: reference/systems_reference/index.md\n"
+        )
         lines.append("          - Systems:\n")
 
         for namespace in sorted(self.parser.systems.keys()):
@@ -4262,29 +4264,40 @@ def compute_source_hash(source_root: Path) -> str:
     return hasher.hexdigest()
 
 
-def should_regenerate(source_root: Path, cache_file: Path) -> bool:
-    """Check if regeneration is needed based on source file changes"""
+def should_regenerate(source_root: Path, cache_file: Path) -> tuple[bool, str]:
+    """Check if regeneration is needed based on source file changes.
+
+    Returns a tuple of (needs_regeneration, current_hash) so the caller can
+    reuse the hash that was computed before processing started, rather than
+    re-hashing after processing finishes (which could capture intermediate
+    file changes made while the script was running).
+    """
+    current_hash = compute_source_hash(source_root)
+
     if not cache_file.exists():
-        return True
+        return True, current_hash
 
     try:
         with open(cache_file, "r") as f:
             cache_data = json.load(f)
             cached_hash = cache_data.get("source_hash", "")
     except (json.JSONDecodeError, OSError):
-        return True
+        return True, current_hash
 
-    current_hash = compute_source_hash(source_root)
-    return current_hash != cached_hash
+    return current_hash != cached_hash, current_hash
 
 
-def save_cache(source_root: Path, cache_file: Path):
-    """Save current source hash to cache"""
+def save_cache(cache_file: Path, source_hash: str):
+    """Save the given source hash to cache.
+
+    The hash passed in must be the one computed *before* processing started so
+    that any files modified while the script was running don't get silently
+    marked as up-to-date on the next invocation.
+    """
     cache_file.parent.mkdir(parents=True, exist_ok=True)
-    current_hash = compute_source_hash(source_root)
 
     with open(cache_file, "w") as f:
-        json.dump({"source_hash": current_hash}, f, indent=2)
+        json.dump({"source_hash": source_hash}, f, indent=2)
         f.write("\n")  # Add trailing newline for pre-commit
 
 
@@ -4292,7 +4305,11 @@ def generate_if_needed(source_root: Path, force: bool = False) -> int:
     """Generate documentation only if sources changed or forced"""
     cache_file = source_root / "docs/reference/systems_reference/.cache.json"
 
-    if not force and not should_regenerate(source_root, cache_file):
+    # Compute the hash *before* processing so that any files modified while
+    # the script is running are not silently treated as already processed.
+    needs_regen, pre_run_hash = should_regenerate(source_root, cache_file)
+
+    if not force and not needs_regen:
         print("Systems reference documentation is up to date (sources unchanged)")
         return 0
 
@@ -4300,7 +4317,7 @@ def generate_if_needed(source_root: Path, force: bool = False) -> int:
     result = main()
 
     if result == 0:
-        save_cache(source_root, cache_file)
+        save_cache(cache_file, pre_run_hash)
 
     return result
 
