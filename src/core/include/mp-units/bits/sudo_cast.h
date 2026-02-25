@@ -39,6 +39,25 @@ using maybe_common_type =
   std::conditional_t<has_common_type_v<T, Other>, std::common_type<T, Other>, std::type_identity<T>>::type;
 
 /**
+ * @brief Magnitude-only details about a unit conversion factor
+ *
+ * Factored out of `conversion_type_traits` and `conversion_value_traits` so that the
+ * magnitude decomposition (which depends only on `M`, not on any representation type)
+ * is computed once per unique magnitude and shared across all representation combinations.
+ *
+ * @note This is a low-level facility.
+ *
+ * @tparam M common magnitude between the two quantities
+ */
+template<UnitMagnitude auto M>
+struct magnitude_traits {
+  using c_mag_type = common_magnitude_type<M>;
+  static constexpr UnitMagnitude auto num = numerator(M);
+  static constexpr UnitMagnitude auto den = denominator(M);
+  static constexpr UnitMagnitude auto irr = M * (den / num);
+};
+
+/**
  * @brief Type-related details about the conversion from one quantity to another
  *
  * This trait helps to determine what representations to use at which step in the conversion process,
@@ -53,7 +72,7 @@ using maybe_common_type =
 template<UnitMagnitude auto M, typename Rep1, typename Rep2>
 struct conversion_type_traits {
   using c_rep_type = maybe_common_type<Rep1, Rep2>;
-  using c_mag_type = common_magnitude_type<M>;
+  using c_mag_type = magnitude_traits<M>::c_mag_type;
   using multiplier_type = conditional<
     treat_as_floating_point<c_rep_type>,
     // ensure that the multiplier is also floating-point
@@ -77,14 +96,81 @@ struct conversion_type_traits {
  */
 template<UnitMagnitude auto M, typename T>
 struct conversion_value_traits {
-  static constexpr UnitMagnitude auto num = numerator(M);
-  static constexpr UnitMagnitude auto den = denominator(M);
-  static constexpr UnitMagnitude auto irr = M * (den / num);
-  static constexpr T num_mult = get_value<T>(num);
-  static constexpr T den_mult = get_value<T>(den);
-  static constexpr T irr_mult = get_value<T>(irr);
+  using mag = magnitude_traits<M>;
+  static constexpr T num_mult = get_value<T>(mag::num);
+  static constexpr T den_mult = get_value<T>(mag::den);
+  static constexpr T irr_mult = get_value<T>(mag::irr);
   static constexpr T ratio = num_mult / den_mult * irr_mult;
 };
+
+
+/**
+ * @brief Single point of intentional narrowing/truncation with compiler diagnostics disabled
+ *
+ * Every `static_cast` that intentionally converts to a lower-precision type (e.g. `long double`
+ * intermediate → `double` result) must go through this helper so that the diagnostic suppression
+ * macros appear in exactly one place and are easy to audit.
+ *
+ * @tparam To target type
+ * @tparam From source type (deduced)
+ */
+template<typename To, typename From>
+[[nodiscard]] constexpr To silent_cast(From value) noexcept
+{
+  MP_UNITS_DIAGNOSTIC_PUSH
+  MP_UNITS_DIAGNOSTIC_IGNORE_FLOAT_CONVERSION
+  return static_cast<To>(value);
+  MP_UNITS_DIAGNOSTIC_POP
+}
+
+/**
+ * @brief Numerical scaling of a value between two units
+ *
+ * Contains all the scaling logic that depends only on the source/target unit and representation
+ * types. By factoring this out of `sudo_cast` (which is parametrised on the full `Quantity` type),
+ * the expensive instantiation is shared across all quantity types that happen to have the same
+ * unit and representation — e.g. `quantity<m, double>`, `quantity<isq::length[m], double>`, and
+ * `quantity<isq::radius[m], double>` all reuse the same `sudo_cast_value<m, double, km, double>`
+ * instantiation.
+ *
+ * @note This is a low-level facility.
+ *
+ * @tparam FromUnit source unit
+ * @tparam FromRep  source representation type
+ * @tparam ToUnit   target unit
+ * @tparam ToRep    target representation type
+ */
+template<Unit auto FromUnit, typename FromRep, Unit auto ToUnit, typename ToRep>
+[[nodiscard]] constexpr ToRep sudo_cast_value(FromRep value)
+{
+  constexpr UnitMagnitude auto c_mag =
+    mp_units::get_canonical_unit(FromUnit).mag / mp_units::get_canonical_unit(ToUnit).mag;
+  using type_traits = conversion_type_traits<c_mag, FromRep, ToRep>;
+  using multiplier_type = typename type_traits::multiplier_type;
+  // Cast arg to the intermediate computation type; this cast is widening (never truncating).
+  const auto arg = static_cast<typename type_traits::c_type>(value);
+  // We need to return a representation type used by the user's quantity type. It might have
+  // a lower precision than we get as a result of the intermediate scaling calculations.
+  // For example, when converting between degree and radian we need to multiply/divide by `pi`
+  // which is implemented in terms of `long double`. If the user's quantity type has `double`
+  // or `float` representation, this will cause a warning on conversion from `long double`
+  // (even with the `static_cast` usage). However, the value truncation is exactly what we want
+  // in this case, so we need to suppress the warning here. All such casts go through
+  // `silent_cast` which is the single point of intentional truncation in this file.
+  if constexpr (is_integral(c_mag))
+    return silent_cast<ToRep>(arg * get_value<multiplier_type>(numerator(c_mag)));
+  else if constexpr (is_integral(pow<-1>(c_mag)))
+    return silent_cast<ToRep>(arg / get_value<multiplier_type>(denominator(c_mag)));
+  else {
+    using value_traits = conversion_value_traits<c_mag, multiplier_type>;
+    if constexpr (std::is_floating_point_v<multiplier_type>)
+      // this results in great assembly
+      return silent_cast<ToRep>(arg * value_traits::ratio);
+    else
+      // this is slower but allows conversions like 2000 m -> 2 km without loosing data
+      return silent_cast<ToRep>(arg * value_traits::num_mult / value_traits::den_mult * value_traits::irr_mult);
+  }
+}
 
 
 /**
@@ -102,50 +188,13 @@ template<Quantity To, typename FwdFrom, Quantity From = std::remove_cvref_t<FwdF
 // TODO how to constrain the second part here?
 [[nodiscard]] constexpr To sudo_cast(FwdFrom&& q)
 {
-  auto silent_cast = [](auto value) {
-    // We need to return a representation type used by the user's quantity type. It might have
-    // a lower precision than we get as a results of the intermediate scaling calculations.
-    // For example, when converting between degree and radian we need to multiply/divide by `pi`
-    // which is implemented in terms of `long double`. If the user's quantity type has `double`
-    // or `float` representation, this will cause a warning on conversion from `long double`
-    // (even with the `static_cast` usage). However, the value truncation is exactly what we want
-    // in this case, so we need to suppress the warning here.
-    MP_UNITS_DIAGNOSTIC_PUSH
-    MP_UNITS_DIAGNOSTIC_IGNORE_FLOAT_CONVERSION
-    return static_cast<To::rep>(value);
-    MP_UNITS_DIAGNOSTIC_POP
-  };
-
-  constexpr auto q_unit = From::unit;
-  if constexpr (equivalent(q_unit, To::unit)) {
+  if constexpr (equivalent(From::unit, To::unit)) {
     // no scaling of the number needed
-    return {silent_cast(std::forward<FwdFrom>(q).numerical_value_is_an_implementation_detail_), To::reference};
+    return {silent_cast<typename To::rep>(std::forward<FwdFrom>(q).numerical_value_is_an_implementation_detail_), To::reference};
   } else {
-    constexpr UnitMagnitude auto c_mag = get_canonical_unit(From::unit).mag / get_canonical_unit(To::unit).mag;
-    using type_traits = conversion_type_traits<c_mag, typename From::rep, typename To::rep>;
-    using multiplier_type = typename type_traits::multiplier_type;
-    // TODO the below crashed nearly every compiler I tried it on
-    // auto scale = [&](std::invocable<typename type_traits::c_type> auto func) {
-    auto scale = [&](auto func) {
-      const auto arg = static_cast<type_traits::c_type>(q.numerical_value_is_an_implementation_detail_);
-      return To{silent_cast(func(arg)), To::reference};
-    };
-
-    // scale the number
-    if constexpr (is_integral(c_mag))
-      return scale([&](auto value) { return value * get_value<multiplier_type>(numerator(c_mag)); });
-    else if constexpr (is_integral(pow<-1>(c_mag)))
-      return scale([&](auto value) { return value / get_value<multiplier_type>(denominator(c_mag)); });
-    else {
-      using value_traits = conversion_value_traits<c_mag, multiplier_type>;
-      if constexpr (std::is_floating_point_v<multiplier_type>)
-        // this results in great assembly
-        return scale([](auto value) { return value * value_traits::ratio; });
-      else
-        // this is slower but allows conversions like 2000 m -> 2 km without loosing data
-        return scale(
-          [](auto value) { return value * value_traits::num_mult / value_traits::den_mult * value_traits::irr_mult; });
-    }
+    return {sudo_cast_value<From::unit, typename From::rep, To::unit, typename To::rep>(
+              std::forward<FwdFrom>(q).numerical_value_is_an_implementation_detail_),
+            To::reference};
   }
 }
 
