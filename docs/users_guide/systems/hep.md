@@ -273,11 +273,11 @@ As noted by John Chapman (currently one of the ATLAS Offline Software coordinato
 
     "HEP Software stacks typically rely on multiple projects. Each of which define their
     physical constants based on the CODATA recommendations. (Note these do change over time!)
-    
+
     Currently the CODATA version is fixed for a particular release of a project, which can
     lead to (small) inconsistencies, for example if an older version of one project needs to
     be used, but another project needs to be updated to pick up new functionality.
-    
+
     I would like to find a way to avoid this. If they all depended on a single external
     library which we could easily configure to use a particular set of recommendations,
     then that would make things easier."
