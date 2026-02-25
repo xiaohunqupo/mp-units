@@ -36,7 +36,7 @@ flowchart LR
     hep_length --- hep_range
     hep_vertex_position["<b><a href="../../systems/hep/#vertex_position" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">hep::vertex_position</a></b>"]
     hep_length --- hep_vertex_position
-    hep_wavelength["<b><a href="../../systems/hep/#wavelength" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">hep::wavelength</a> 🔒</b>"]
+    hep_wavelength["<b><a href="../../systems/hep/#wavelength" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">hep::wavelength</a></b>"]
     hep_length --- hep_wavelength
     hep_width["<b><a href="../../systems/hep/#width" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">hep::width</a></b>"]
     hep_length --- hep_width

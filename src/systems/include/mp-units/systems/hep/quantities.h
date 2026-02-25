@@ -82,8 +82,7 @@ QUANTITY_SPEC(mean_free_path, length);    // average distance between collisions
 QUANTITY_SPEC(impact_parameter, length);  // closest approach distance in collisions
 QUANTITY_SPEC(decay_length, length);      // distance traveled before particle decay
 QUANTITY_SPEC(vertex_position, length);   // position of collision/decay vertex
-QUANTITY_SPEC(wavelength, length,
-              is_kind);         // electromagnetic or de Broglie wavelength (wave property, not geometric distance)
+QUANTITY_SPEC(wavelength, length);        // electromagnetic or de Broglie wavelength
 QUANTITY_SPEC(radius, length);  // radial distance from axis/center
 QUANTITY_SPEC(range, length);   // distance a particle travels before stopping
 

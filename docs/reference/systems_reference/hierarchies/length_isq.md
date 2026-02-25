@@ -22,7 +22,7 @@ flowchart LR
     isq_path_length --- isq_distance
     isq_radial_distance["<b><a href="../../systems/isq/#radial_distance" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">isq::radial_distance</a></b>"]
     isq_distance --- isq_radial_distance
-    isq_wavelength["<b><a href="../../systems/isq/#wavelength" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">isq::wavelength</a> 🔒</b>"]
+    isq_wavelength["<b><a href="../../systems/isq/#wavelength" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">isq::wavelength</a></b>"]
     isq_length --- isq_wavelength
     isq_width["<b><a href="../../systems/isq/#width" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">isq::width</a> | <a href="../../systems/isq/#breadth" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">isq::breadth</a></b>"]
     isq_length --- isq_width
@@ -35,7 +35,3 @@ flowchart LR
     isq_thickness["<b><a href="../../systems/isq/#thickness" style="color: var(--md-mermaid-label-fg-color); text-decoration: none;">isq::thickness</a></b>"]
     isq_width --- isq_thickness
 ```
-
-**Legend:**
-
-- 🔒 indicates a root of a sub-kind - quantities that cannot be added or compared to other quantities outside their hierarchy subtree

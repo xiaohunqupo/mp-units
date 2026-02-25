@@ -110,7 +110,7 @@
 | <span id="velocity"></span><code>velocity</code> | Vector | LT⁻¹ | ✓ | <code>[velocity](#velocity)</code> | — | <code>[displacement](#displacement) / <wbr>[duration](#duration)</code> | [view](../hierarchies/velocity.md) |
 | <span id="vertex_position"></span><code>vertex_<wbr>position</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="volume"></span><code>volume</code> | Real | L³ | ✓ | <code>[volume](#volume)</code> | — | <code>pow<3>([length](#length))</code> | [view](../hierarchies/volume_hep.md) |
-| <span id="wavelength"></span><code>wavelength</code> | Real | L | ✓ | <code>[wavelength](#wavelength)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
+| <span id="wavelength"></span><code>wavelength</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 | <span id="width"></span><code>width</code> | Real | L | — | <code>[length](#length)</code> | <code>[length](#length)</code> | — | [view](../hierarchies/length_hep.md) |
 
 ## Units

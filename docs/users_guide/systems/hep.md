@@ -193,19 +193,6 @@ quantity gamma = 2.5 * lorentz_factor;
 quantity t_lab = coordinate_time(tau * gamma);  // explicit physics conversion
 ```
 
-### Wave Property: `wavelength`
-
-`wavelength` is a periodic property of an oscillating field (photon or de Broglie
-wave). It is not a spatial distance and cannot be compared to or added with geometric
-lengths such as `decay_length`, `path_length`, or `radiation_length`:
-
-```cpp
-quantity lambda = 400. * hep::nm * wavelength;   // optical photon wavelength
-quantity L      = 1.5 * hep::m * decay_length;   // detector geometry
-
-// auto wrong = lambda + L;  // Compile error — different kinds ✓
-```
-
 ### Material Characteristic Lengths: `radiation_length` and `interaction_length`
 
 These are properties of a material, not distances travelled by a particle. They appear
