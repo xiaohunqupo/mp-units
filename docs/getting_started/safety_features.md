@@ -141,7 +141,6 @@ Examples of quantities with same dimension but different kinds:
 - **Frequency (Hz)** and **Activity (Bq)**: Both `1/time`
 - **Plane angle (rad)** and **Solid angle (sr)**: Both dimensionless
 - **Area (m²)** and **Fuel consumption (L/100km)**: Both `length²` (dimension L²)
-- **Distance (m)** and **Wavelength (m)**: Both `length`
 
 !!! important
 
@@ -243,6 +242,8 @@ for differences.
 
 To dive deeper into **mp-units** safety features:
 
+- **[Understanding Safety Levels (Blog)](../blog/posts/understanding-safety-levels.md)** -
+  In-depth analysis, library comparisons, and why safety matters for C++ standardization
 - [Simple and Typed Quantities](../users_guide/framework_basics/simple_and_typed_quantities.md) -
   Choose your level of type safety
 - [Systems of Quantities](../users_guide/framework_basics/systems_of_quantities.md) -
