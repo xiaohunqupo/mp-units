@@ -495,12 +495,12 @@ struct quantity_spec<Self, QS, Args...> : detail::propagate_equation<QS>, detail
 // clang-format on
 #if MP_UNITS_API_NO_CRTP
 template<detail::NamedQuantitySpec auto QS, detail::DerivedQuantitySpec auto Eq, detail::QSProperty auto... Args>
-  requires(explicitly_convertible(Eq, QS))
+  requires(mp_units::explicitly_convertible(Eq, QS))
 struct quantity_spec<QS, Eq, Args...> : detail::quantity_spec_interface {
 #else
 template<typename Self, detail::NamedQuantitySpec auto QS, detail::DerivedQuantitySpec auto Eq,
          detail::QSProperty auto... Args>
-  requires(explicitly_convertible(Eq, QS))
+  requires(mp_units::explicitly_convertible(Eq, QS))
 struct quantity_spec<Self, QS, Eq, Args...> : detail::quantity_spec_interface<Self> {
 #endif
   using _base_type_ = quantity_spec;
@@ -709,7 +709,7 @@ template<typename... Ts>
   if constexpr (sizeof...(Ts) == 0)
     return 0;
   else
-    return max({detail::get_complexity_impl(Ts{})...});
+    return detail::max({detail::get_complexity_impl(Ts{})...});
 }
 
 template<QuantitySpec Q, int... Ints>
@@ -728,7 +728,8 @@ template<QuantitySpec Q>
 [[nodiscard]] consteval int get_complexity_impl(Q)
 {
   if constexpr (DerivedQuantitySpec<Q>)
-    return max(detail::get_complexity_impl(typename Q::_num_{}), detail::get_complexity_impl(typename Q::_den_{}));
+    return detail::max(detail::get_complexity_impl(typename Q::_num_{}),
+                       detail::get_complexity_impl(typename Q::_den_{}));
   else if constexpr (requires { Q::_equation_; } && Q{} != dimensionless)
     return 1 + detail::get_complexity(Q::_equation_);
   else
@@ -1161,7 +1162,7 @@ namespace detail {
 
 [[nodiscard]] consteval bool explicitly_convertible_to_dimensionless(QuantitySpec auto qs)
 {
-  return explicitly_convertible(qs, dimensionless);
+  return mp_units::explicitly_convertible(qs, dimensionless);
 }
 
 template<QuantitySpec Q>

@@ -96,7 +96,7 @@ struct conversion_value_traits {
  * @tparam To a target quantity type to cast to
  */
 template<Quantity To, typename FwdFrom, Quantity From = std::remove_cvref_t<FwdFrom>>
-  requires(castable(From::quantity_spec, To::quantity_spec)) &&
+  requires(mp_units::castable(From::quantity_spec, To::quantity_spec)) &&
           (((equivalent(From::unit, To::unit)) && std::constructible_from<typename To::rep, typename From::rep>) ||
            (!equivalent(From::unit, To::unit)))  // && scalable_with_<typename To::rep>))
 // TODO how to constrain the second part here?
@@ -159,7 +159,7 @@ template<Quantity To, typename FwdFrom, Quantity From = std::remove_cvref_t<FwdF
  * @tparam ToQP a target quantity point type to which to cast to
  */
 template<QuantityPoint ToQP, typename FwdFromQP, QuantityPoint FromQP = std::remove_cvref_t<FwdFromQP>>
-  requires(castable(FromQP::quantity_spec, ToQP::quantity_spec)) &&
+  requires(mp_units::castable(FromQP::quantity_spec, ToQP::quantity_spec)) &&
           (detail::same_absolute_point_origins(ToQP::point_origin, FromQP::point_origin)) &&
           (((equivalent(FromQP::unit, ToQP::unit)) &&
             std::constructible_from<typename ToQP::rep, typename FromQP::rep>) ||
@@ -182,7 +182,8 @@ template<QuantityPoint ToQP, typename FwdFromQP, QuantityPoint FromQP = std::rem
     // In the following, we carefully select the order of these three operations: each of (a) and (b) is scheduled
     // either before or after (c), such that (c) acts on the largest range possible among all combination of source
     // and target unit and representation.
-    constexpr UnitMagnitude auto c_mag = get_canonical_unit(FromQP::unit).mag / get_canonical_unit(ToQP::unit).mag;
+    constexpr UnitMagnitude auto c_mag =
+      mp_units::get_canonical_unit(FromQP::unit).mag / mp_units::get_canonical_unit(ToQP::unit).mag;
     using type_traits = conversion_type_traits<c_mag, typename FromQP::rep, typename ToQP::rep>;
     using value_traits = conversion_value_traits<c_mag, typename type_traits::multiplier_type>;
     using c_rep_type = typename type_traits::c_rep_type;

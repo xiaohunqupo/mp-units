@@ -78,7 +78,7 @@ template<Unit UFrom, Unit UTo>
   if constexpr (is_same_v<UFrom, UTo>)
     return true;
   else
-    return is_integral(get_canonical_unit(from).mag / get_canonical_unit(to).mag);
+    return is_integral(mp_units::get_canonical_unit(from).mag / mp_units::get_canonical_unit(to).mag);
 }
 
 template<typename T, typename Arg>
@@ -107,7 +107,7 @@ concept ValuePreservingConversion =
 
 template<typename QTo, typename QFrom>
 concept QuantityConstructibleFrom =
-  Quantity<QTo> && Quantity<QFrom> && explicitly_convertible(QFrom::quantity_spec, QTo::quantity_spec) &&
+  Quantity<QTo> && Quantity<QFrom> && mp_units::explicitly_convertible(QFrom::quantity_spec, QTo::quantity_spec) &&
   ValuePreservingConstruction<typename QTo::rep, typename QFrom::rep> &&
   ValuePreservingConversion<QFrom::unit, typename QFrom::rep, QTo::unit, typename QTo::rep>;
 
@@ -115,14 +115,17 @@ template<typename T, typename Rep>
 concept ScalarValuePreservingTo = (!Quantity<T>) && Scalar<T> && is_value_preserving<T, Rep>;
 
 template<auto R>
-concept UnitOne = Reference<MP_UNITS_REMOVE_CONST(decltype(R))> &&
-                  (equivalent(get_unit(R), one) && get_associated_quantity(get_unit(R)) == dimensionless);
+concept UnitOne =
+  Reference<MP_UNITS_REMOVE_CONST(decltype(R))> &&
+  (equivalent(mp_units::get_unit(R), one) && detail::get_associated_quantity(mp_units::get_unit(R)) == dimensionless);
 
 template<auto R>
-concept ExplicitFromNumber = UnitOne<R> && (explicitly_convertible(get_quantity_spec(R), dimensionless));
+concept ExplicitFromNumber =
+  UnitOne<R> && (mp_units::explicitly_convertible(mp_units::get_quantity_spec(R), dimensionless));
 
 template<auto R>
-concept ImplicitFromNumber = ExplicitFromNumber<R> && (implicitly_convertible(get_quantity_spec(R), dimensionless));
+concept ImplicitFromNumber =
+  ExplicitFromNumber<R> && (mp_units::implicitly_convertible(mp_units::get_quantity_spec(R), dimensionless));
 
 template<typename Q>
 concept ImplicitFromNumberQuantity = Quantity<Q> && ImplicitFromNumber<Q::reference>;
@@ -138,16 +141,16 @@ concept InvocableQuantities = QuantitySpec<MP_UNITS_REMOVE_CONST(decltype(QS))> 
                               InvokeResultOf<QS, Func, typename Q1::rep, typename Q2::rep>;
 
 template<auto R1, auto R2>
-concept HaveCommonReference = requires { get_common_reference(R1, R2); };
+concept HaveCommonReference = requires { mp_units::get_common_reference(R1, R2); };
 
 template<typename Func, Quantity Q1, Quantity Q2>
-using common_quantity_for = quantity<get_common_reference(Q1::reference, Q2::reference),
+using common_quantity_for = quantity<mp_units::get_common_reference(Q1::reference, Q2::reference),
                                      std::invoke_result_t<Func, typename Q1::rep, typename Q2::rep>>;
 
 template<typename Rep, Unit U1, Unit U2>
 [[nodiscard]] consteval bool overflows_non_zero_common_values(U1 u1, U2 u2)
 {
-  constexpr Unit auto cu = get_common_unit(U1{}, U2{});
+  constexpr Unit auto cu = mp_units::get_common_unit(U1{}, U2{});
   return scaling_overflows_non_zero_values<Rep>(u1, cu) || scaling_overflows_non_zero_values<Rep>(u2, cu);
 }
 
@@ -156,7 +159,7 @@ concept CommonlyInvocableQuantities =
   Quantity<Q1> && Quantity<Q2> && HaveCommonReference<Q1::reference, Q2::reference> &&
   std::convertible_to<Q1, common_quantity_for<Func, Q1, Q2>> &&
   std::convertible_to<Q2, common_quantity_for<Func, Q1, Q2>> &&
-  InvocableQuantities<Func, Q1, Q2, get_common_quantity_spec(Q1::quantity_spec, Q2::quantity_spec)> &&
+  InvocableQuantities<Func, Q1, Q2, mp_units::get_common_quantity_spec(Q1::quantity_spec, Q2::quantity_spec)> &&
   (!overflows_non_zero_common_values<std::invoke_result_t<Func, typename Q1::rep, typename Q2::rep>>(Q1::unit,
                                                                                                      Q2::unit));
 
@@ -176,16 +179,16 @@ MP_UNITS_EXPORT_BEGIN
  * @tparam R a reference of the quantity providing all information about quantity properties
  * @tparam Rep a type to be used to represent values of a quantity
  */
-template<Reference auto R, RepresentationOf<get_quantity_spec(R)> Rep = double>
+template<Reference auto R, RepresentationOf<mp_units::get_quantity_spec(R)> Rep = double>
 class quantity {
 public:
   Rep numerical_value_is_an_implementation_detail_;  ///< needs to be public for a structural type
 
   // member types and values
   static constexpr Reference auto reference = R;
-  static constexpr QuantitySpec auto quantity_spec = get_quantity_spec(reference);
+  static constexpr QuantitySpec auto quantity_spec = mp_units::get_quantity_spec(reference);
   static constexpr Dimension auto dimension = quantity_spec.dimension;
-  static constexpr Unit auto unit = get_unit(reference);
+  static constexpr Unit auto unit = mp_units::get_unit(reference);
   using rep = Rep;
 
   // static member functions
@@ -211,13 +214,13 @@ public:
   quantity() = default;
 
   template<Reference R2>
-    requires(equivalent(unit, get_unit(R2{})))
+    requires(equivalent(unit, mp_units::get_unit(R2{})))
   constexpr quantity(rep val, R2) : numerical_value_is_an_implementation_detail_(std::move(val))
   {
   }
 
   template<typename Value, Reference R2>
-    requires(equivalent(unit, get_unit(R2{}))) && (!detail::ValuePreservingConstruction<rep, Value>)
+    requires(equivalent(unit, mp_units::get_unit(R2{}))) && (!detail::ValuePreservingConstruction<rep, Value>)
   constexpr quantity(Value val, R2)
 #if __cpp_deleted_function
     = delete("Conversion is not value-preserving");
@@ -226,13 +229,13 @@ public:
 #endif
 
   template<typename FwdValue, Reference R2>
-    requires(!equivalent(unit, get_unit(R2{}))) &&
+    requires(!equivalent(unit, mp_units::get_unit(R2{}))) &&
             detail::QuantityConstructibleFrom<quantity, quantity<R2{}, std::remove_cvref_t<FwdValue>>>
   constexpr quantity(FwdValue&& val, R2) : quantity(::mp_units::quantity{std::forward<FwdValue>(val), R2{}})
   {
   }
 
-  constexpr explicit(!implicitly_convertible(quantity_spec, dimensionless)) quantity(rep val)
+  constexpr explicit(!mp_units::implicitly_convertible(quantity_spec, dimensionless)) quantity(rep val)
     requires detail::ExplicitFromNumber<reference>
       : numerical_value_is_an_implementation_detail_(std::move(val))
   {
@@ -247,8 +250,8 @@ public:
 
   template<typename Value>
     requires detail::ExplicitFromNumber<reference> && (!detail::ValuePreservingConstruction<rep, Value>)
-  constexpr explicit(!std::convertible_to<Value, rep> || !implicitly_convertible(quantity_spec, dimensionless))
-    quantity(Value val)
+  constexpr explicit(!std::convertible_to<Value, rep> ||
+                     !mp_units::implicitly_convertible(quantity_spec, dimensionless)) quantity(Value val)
 #if __cpp_deleted_function
     = delete("Conversion is not value-preserving");
 #else
@@ -256,19 +259,21 @@ public:
 #endif
 
   template<auto R2, typename Rep2>
-    requires detail::QuantityConstructibleFrom<quantity, quantity<R2, Rep2>> && (equivalent(unit, get_unit(R2)))
+    requires detail::QuantityConstructibleFrom<quantity, quantity<R2, Rep2>> &&
+             (equivalent(unit, mp_units::get_unit(R2)))
   // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
-  constexpr explicit(!implicitly_convertible(get_quantity_spec(R2), quantity_spec) || !std::convertible_to<Rep2, rep>)
-    quantity(const quantity<R2, Rep2>& q) :
+  constexpr explicit(!mp_units::implicitly_convertible(mp_units::get_quantity_spec(R2), quantity_spec) ||
+                     !std::convertible_to<Rep2, rep>) quantity(const quantity<R2, Rep2>& q) :
       numerical_value_is_an_implementation_detail_(q.numerical_value_in(q.unit))
   {
   }
 
   template<auto R2, typename Rep2>
-    requires detail::QuantityConstructibleFrom<quantity, quantity<R2, Rep2>> && (!equivalent(unit, get_unit(R2)))
+    requires detail::QuantityConstructibleFrom<quantity, quantity<R2, Rep2>> &&
+             (!equivalent(unit, mp_units::get_unit(R2)))
   // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
-  constexpr explicit(!implicitly_convertible(get_quantity_spec(R2), quantity_spec) || !std::convertible_to<Rep2, rep>)
-    quantity(const quantity<R2, Rep2>& q) :
+  constexpr explicit(!mp_units::implicitly_convertible(mp_units::get_quantity_spec(R2), quantity_spec) ||
+                     !std::convertible_to<Rep2, rep>) quantity(const quantity<R2, Rep2>& q) :
       quantity(detail::sudo_cast<quantity>(q))
   {
   }
@@ -389,7 +394,7 @@ public:
              std::is_nothrow_copy_constructible_v<rep>)
   {
     return quantity_like_traits<Q>::from_numerical_value(
-      numerical_value_in(get_unit(quantity_like_traits<Q>::reference)));
+      numerical_value_in(mp_units::get_unit(quantity_like_traits<Q>::reference)));
   }
 
   // member unary operators
@@ -445,13 +450,14 @@ public:
 
   // compound assignment operators
   template<auto R2, typename Rep2>
-    requires(implicitly_convertible(get_quantity_spec(R2), quantity_spec)) &&
-            detail::ValuePreservingConversion<get_unit(R2), Rep2, unit, rep> && requires(rep& a, const Rep2 b) {
+    requires(mp_units::implicitly_convertible(mp_units::get_quantity_spec(R2), quantity_spec)) &&
+            detail::ValuePreservingConversion<mp_units::get_unit(R2), Rep2, unit, rep> &&
+            requires(rep& a, const Rep2 b) {
               { a += b } -> std::same_as<rep&>;
             }
   constexpr quantity& operator+=(const quantity<R2, Rep2>& other) &
   {
-    if constexpr (equivalent(unit, get_unit(R2)))
+    if constexpr (equivalent(unit, mp_units::get_unit(R2)))
       numerical_value_is_an_implementation_detail_ += other.numerical_value_is_an_implementation_detail_;
     else
       numerical_value_is_an_implementation_detail_ += other.in(unit).numerical_value_is_an_implementation_detail_;
@@ -459,13 +465,14 @@ public:
   }
 
   template<auto R2, typename Rep2>
-    requires(implicitly_convertible(get_quantity_spec(R2), quantity_spec)) &&
-            detail::ValuePreservingConversion<get_unit(R2), Rep2, unit, rep> && requires(rep& a, const Rep2 b) {
+    requires(mp_units::implicitly_convertible(mp_units::get_quantity_spec(R2), quantity_spec)) &&
+            detail::ValuePreservingConversion<mp_units::get_unit(R2), Rep2, unit, rep> &&
+            requires(rep& a, const Rep2 b) {
               { a -= b } -> std::same_as<rep&>;
             }
   constexpr quantity& operator-=(const quantity<R2, Rep2>& other) &
   {
-    if constexpr (equivalent(unit, get_unit(R2)))
+    if constexpr (equivalent(unit, mp_units::get_unit(R2)))
       numerical_value_is_an_implementation_detail_ -= other.numerical_value_is_an_implementation_detail_;
     else
       numerical_value_is_an_implementation_detail_ -= other.in(unit).numerical_value_is_an_implementation_detail_;
@@ -473,14 +480,16 @@ public:
   }
 
   template<auto R2, typename Rep2>
-    requires(!treat_as_floating_point<rep>) && (implicitly_convertible(get_quantity_spec(R2), quantity_spec)) &&
-            detail::ValuePreservingConversion<get_unit(R2), Rep2, unit, rep> && requires(rep& a, const Rep2 b) {
+    requires(!treat_as_floating_point<rep>) &&
+            (mp_units::implicitly_convertible(mp_units::get_quantity_spec(R2), quantity_spec)) &&
+            detail::ValuePreservingConversion<mp_units::get_unit(R2), Rep2, unit, rep> &&
+            requires(rep& a, const Rep2 b) {
               { a %= b } -> std::same_as<rep&>;
             }
   constexpr quantity& operator%=(const quantity<R2, Rep2>& other) &
   {
     MP_UNITS_EXPECTS_DEBUG(other != 0);
-    if constexpr (equivalent(unit, get_unit(R2)))
+    if constexpr (equivalent(unit, mp_units::get_unit(R2)))
       numerical_value_is_an_implementation_detail_ %= other.numerical_value_is_an_implementation_detail_;
     else
       numerical_value_is_an_implementation_detail_ %= other.in(unit).numerical_value_is_an_implementation_detail_;
@@ -714,10 +723,10 @@ public:
 };
 
 // CTAD
-template<Reference R, RepresentationOf<get_quantity_spec(R{})> Value>
+template<Reference R, RepresentationOf<mp_units::get_quantity_spec(R{})> Value>
 quantity(Value v, R) -> quantity<R{}, Value>;
 
-template<Reference auto R = one, RepresentationOf<get_quantity_spec(R)> Value>
+template<Reference auto R = one, RepresentationOf<mp_units::get_quantity_spec(R)> Value>
 quantity(Value) -> quantity<R, Value>;
 
 template<QuantityLike Q>
@@ -735,7 +744,7 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
       oss << +q.numerical_value_ref_in(q.unit);
     else
       oss << q.numerical_value_ref_in(q.unit);
-    if constexpr (space_before_unit_symbol<get_unit(R)>) oss << " ";
+    if constexpr (space_before_unit_symbol<mp_units::get_unit(R)>) oss << " ";
     oss << q.unit;
   });
 }
@@ -875,8 +884,8 @@ template<auto Reference, typename Char, std::formattable<Char> Rep>
 template<auto Reference, typename Rep, typename Char>
 #endif
 class MP_UNITS_STD_FMT::formatter<mp_units::quantity<Reference, Rep>, Char> {
-  static constexpr auto unit = get_unit(Reference);
-  static constexpr auto dimension = get_quantity_spec(Reference).dimension;
+  static constexpr auto unit = mp_units::get_unit(Reference);
+  static constexpr auto dimension = mp_units::get_quantity_spec(Reference).dimension;
 
   using quantity_t = mp_units::quantity<Reference, Rep>;
   using unit_t = MP_UNITS_NONCONST_TYPE(unit);

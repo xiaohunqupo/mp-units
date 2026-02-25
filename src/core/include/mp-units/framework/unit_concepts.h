@@ -55,6 +55,9 @@ struct named_unit;
 MP_UNITS_EXPORT template<typename T>
 concept PrefixableUnit = Unit<T> && is_derived_from_specialization_of_v<T, named_unit>;
 
+MP_UNITS_EXPORT template<Unit U>
+[[nodiscard]] consteval QuantitySpec auto get_quantity_spec(U);
+
 /**
  * @brief A concept matching all units associated with the provided quantity spec
  *
@@ -64,24 +67,28 @@ concept PrefixableUnit = Unit<T> && is_derived_from_specialization_of_v<T, named
 MP_UNITS_EXPORT template<typename U, auto QS>
 concept UnitOf =
   Unit<U> && QuantitySpec<MP_UNITS_REMOVE_CONST(decltype(QS))> &&
-  (implicitly_convertible(get_quantity_spec(U{}), QS) ||
+  (mp_units::implicitly_convertible(mp_units::get_quantity_spec(U{}), QS) ||
    (unsatisfied<"Unit '{}' is associated with quantity of kind '{}' which is not convertible to the '{}' quantity">(
-     U{}, type_name(get_quantity_spec(U{})._quantity_spec_), type_name(QS))));
+     U{}, type_name(mp_units::get_quantity_spec(U{})._quantity_spec_), type_name(QS))));
+
+MP_UNITS_EXPORT [[nodiscard]] consteval auto get_canonical_unit(Unit auto u);
 
 namespace detail {
 
 template<auto U1, auto U2>
 concept UnitsOfCompatibleQuantities =
-  explicitly_convertible(get_quantity_spec(U1), get_quantity_spec(U2)) ||
+  mp_units::explicitly_convertible(mp_units::get_quantity_spec(U1), mp_units::get_quantity_spec(U2)) ||
   unsatisfied<"'{}' and '{}' units are of quantities of incompatible kinds ('{}' and '{}')">(
-    U1, U2, type_name(get_quantity_spec(U1)._quantity_spec_), type_name(get_quantity_spec(U2)._quantity_spec_));
+    U1, U2, type_name(mp_units::get_quantity_spec(U1)._quantity_spec_),
+    type_name(mp_units::get_quantity_spec(U2)._quantity_spec_));
 
 template<auto U1, auto U2>
-concept ConvertibleUnits = (get_canonical_unit(U1).reference_unit == get_canonical_unit(U2).reference_unit) ||
-                           unsatisfied<
-                             "Units '{}' and '{}' are not convertible because they are defined in terms of "
-                             "different reference units ('{}' and '{}')">(U1, U2, get_canonical_unit(U1).reference_unit,
-                                                                          get_canonical_unit(U2).reference_unit);
+concept ConvertibleUnits =
+  (mp_units::get_canonical_unit(U1).reference_unit == mp_units::get_canonical_unit(U2).reference_unit) ||
+  unsatisfied<
+    "Units '{}' and '{}' are not convertible because they are defined in terms of "
+    "different reference units ('{}' and '{}')">(U1, U2, mp_units::get_canonical_unit(U1).reference_unit,
+                                                 mp_units::get_canonical_unit(U2).reference_unit);
 
 template<typename U1, auto U2>
 concept UnitConvertibleTo =

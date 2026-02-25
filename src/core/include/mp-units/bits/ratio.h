@@ -44,10 +44,10 @@ namespace mp_units::detail {
 {
   constexpr std::intmax_t c = std::uintmax_t{1} << (sizeof(std::intmax_t) * 4);
 
-  [[maybe_unused]] const std::intmax_t a0 = abs(lhs) % c;
-  [[maybe_unused]] const std::intmax_t a1 = abs(lhs) / c;
-  [[maybe_unused]] const std::intmax_t b0 = abs(rhs) % c;
-  [[maybe_unused]] const std::intmax_t b1 = abs(rhs) / c;
+  [[maybe_unused]] const std::intmax_t a0 = detail::abs(lhs) % c;
+  [[maybe_unused]] const std::intmax_t a1 = detail::abs(lhs) / c;
+  [[maybe_unused]] const std::intmax_t b0 = detail::abs(rhs) % c;
+  [[maybe_unused]] const std::intmax_t b1 = detail::abs(rhs) / c;
 
   // overflow in multiplication
   MP_UNITS_ASSERT(a1 == 0 || b1 == 0);

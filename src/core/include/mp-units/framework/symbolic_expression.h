@@ -272,7 +272,7 @@ struct expr_simplify<type_list<T, NRest...>, type_list<T, DRest...>, Pred> :
 template<typename T, ratio Num, ratio Den>
 struct expr_simplify_power {
   static constexpr ratio r = Num - Den;
-  using type = power_or_T<T, ratio{abs(r.num), r.den}>;
+  using type = power_or_T<T, ratio{detail::abs(r.num), r.den}>;
   using num = conditional<(r > 0), type_list<type>, type_list<>>;
   using den = conditional<(r < 0), type_list<type>, type_list<>>;
 };
@@ -558,15 +558,15 @@ template<typename T>
 template<typename T, auto... Ints>
 [[nodiscard]] consteval auto map_power(power<T, Ints...>)
 {
-  return pow<Ints...>(T{});
+  return pow<Ints...>(T{});  // has to be unqualified for late binding
 }
 
 template<template<typename> typename Proj, template<typename...> typename To, SymbolicArg OneType,
          template<typename, typename> typename Pred, typename... Nums, typename... Dens>
 [[nodiscard]] consteval auto expr_map_impl(type_list<Nums...>, type_list<Dens...>)
 {
-  return (OneType{} * ... * map_power(typename expr_type_map<Nums, Proj>::type{})) /
-         (OneType{} * ... * map_power(typename expr_type_map<Dens, Proj>::type{}));
+  return (OneType{} * ... * detail::map_power(typename expr_type_map<Nums, Proj>::type{})) /
+         (OneType{} * ... * detail::map_power(typename expr_type_map<Dens, Proj>::type{}));
 }
 
 /**

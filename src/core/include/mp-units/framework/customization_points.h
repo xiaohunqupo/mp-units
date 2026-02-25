@@ -189,11 +189,12 @@ constexpr auto unit_for = undefined;
 
 template<typename T>
   requires requires { quantity_like_traits<T>::reference; }
-constexpr auto unit_for<T> = get_unit(quantity_like_traits<T>::reference);
+constexpr auto unit_for<T> = get_unit(quantity_like_traits<T>::reference);  // has to be unqualified for late binding
 
 template<typename T>
   requires requires { quantity_point_like_traits<T>::reference; }
-constexpr auto unit_for<T> = get_unit(quantity_point_like_traits<T>::reference);
+constexpr auto unit_for<T> =
+  get_unit(quantity_point_like_traits<T>::reference);  // has to be unqualified for late binding
 
 template<typename T>
 constexpr auto reference_for = undefined;

@@ -51,6 +51,9 @@ concept QuantityKindSpec = QuantitySpec<T> && is_specialization_of<T, kind_of_>;
 MP_UNITS_EXPORT template<QuantitySpec From, QuantitySpec To>
 [[nodiscard]] consteval bool implicitly_convertible(From from, To to);
 
+MP_UNITS_EXPORT template<QuantitySpec From, QuantitySpec To>
+[[nodiscard]] consteval bool explicitly_convertible(From from, To to);
+
 /**
  * @brief A concept matching all quantity specifications of a provided quantity spec value
  *

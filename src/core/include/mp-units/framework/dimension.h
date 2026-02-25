@@ -203,7 +203,7 @@ template<std::intmax_t Num, std::intmax_t Den = 1, Dimension D>
  *
  * @return Dimension The result of computation
  */
-[[nodiscard]] consteval Dimension auto sqrt(Dimension auto d) { return pow<1, 2>(d); }
+[[nodiscard]] consteval Dimension auto sqrt(Dimension auto d) { return mp_units::pow<1, 2>(d); }
 
 /**
  * @brief Computes the cubic root of a dimension
@@ -212,7 +212,7 @@ template<std::intmax_t Num, std::intmax_t Den = 1, Dimension D>
  *
  * @return Dimension The result of computation
  */
-[[nodiscard]] consteval Dimension auto cbrt(Dimension auto d) { return pow<1, 3>(d); }
+[[nodiscard]] consteval Dimension auto cbrt(Dimension auto d) { return mp_units::pow<1, 3>(d); }
 
 
 struct dimension_symbol_formatting {

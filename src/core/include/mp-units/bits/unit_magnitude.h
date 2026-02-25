@@ -256,11 +256,11 @@ struct magnitude_base<unit_magnitude<H, T...>> {
   {
     if constexpr (get_base_value(H) < get_base_value(H2)) {
       // When H1 has the smaller base, prepend to result from recursion.
-      return remove_positive_power(unit_magnitude<H>{}) *
+      return mp_units::detail::remove_positive_power(unit_magnitude<H>{}) *
              common_magnitude(unit_magnitude<T...>{}, unit_magnitude<H2, T2...>{});
     } else if constexpr (get_base_value(H2) < get_base_value(H)) {
       // When H2 has the smaller base, prepend to result from recursion.
-      return remove_positive_power(unit_magnitude<H2>{}) *
+      return mp_units::detail::remove_positive_power(unit_magnitude<H2>{}) *
              common_magnitude(unit_magnitude<H, T...>{}, unit_magnitude<T2...>{});
     } else {
       // When the bases are equal, pick whichever has the lower power.
@@ -309,7 +309,7 @@ template<typename CharT, std::output_iterator<CharT> Out, auto M, auto... Rest>
   auto to_symbol = [&]<typename T>(T v) {
     out = copy_symbol<CharT>(get_base(v)._symbol_, fmt.char_set, negative_power, out);
     constexpr ratio r = get_exponent(T{});
-    return copy_symbol_exponent<CharT, abs(r.num), r.den>(fmt.char_set, negative_power, out);
+    return copy_symbol_exponent<CharT, detail::abs(r.num), r.den>(fmt.char_set, negative_power, out);
   };
   return (to_symbol(M), ..., (print_separator<CharT>(out, fmt), to_symbol(Rest)));
 }
@@ -484,7 +484,7 @@ private:
 
     if ((power_of_2 * power_of_5).num <= 0) return 0;
 
-    return integer_part((abs(power_of_2) < abs(power_of_5)) ? power_of_2 : power_of_5);
+    return integer_part((detail::abs(power_of_2) < detail::abs(power_of_5)) ? power_of_2 : power_of_5);
   }
 
   template<typename CharT, std::output_iterator<CharT> Out>
