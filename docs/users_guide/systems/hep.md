@@ -137,7 +137,7 @@ system uses units natural to particle physics:
 
 ## Specialized Quantities of the Same Kind
 
-Beyond basic dimensional safety, the HEP system provides **specialized quantities**
+Beyond the basic dimensional safety, the HEP system provides **specialized quantities**
 to distinguish physically distinct concepts that share the same dimension. This
 addresses real problems in particle physics code where mixing conceptually different
 values is physically meaningless but dimensionally valid.
@@ -159,520 +159,105 @@ The HEP system provides specialized quantities for:
 For complete hierarchy trees and all available specialized quantities, see the
 [HEP System Reference](../../reference/systems_reference/systems/hep.md).
 
-## Interoperability with Existing HEP Frameworks
+## Distinct Quantity Subkinds
 
-The HEP system is designed to coexist with legacy unit definitions during
-migration. This is crucial for large projects like ATLAS where multiple
-frameworks maintain their own unit constants.
+Some HEP quantities share the same dimension, unit,  and even the same parent quantity,
+yet represent fundamentally **incompatible physical concepts** that should never be added
+to or compared with each other. The HEP system uses the `is_kind` specifier to enforce
+this at compile time. See
+[Creating Distinct Quantity Kinds with `is_kind`](../framework_basics/systems_of_quantities.md#creating-distinct-quantity-kinds-with-is_kind)
+for the general mechanism.
 
-### Current Landscape
+### Relativistic Time: `proper_time` and `coordinate_time`
 
-Major HEP frameworks currently use hand-maintained header files with `constexpr double` values:
+Both are sub-quantities of `duration`, but they live in different reference frames and
+are related by the Lorentz factor, not by addition:
 
-=== "CLHEP"
+$$\tau = \frac{t}{\gamma}$$
 
-    ```cpp
-    // https://gitlab.cern.ch/CLHEP/CLHEP/-/blob/develop/Units/Units/SystemOfUnits.h
-    namespace CLHEP {
-      static constexpr double mm  = 1.;
-      static constexpr double mm2 = mm*mm;
-      static constexpr double mm3 = mm*mm*mm;
-
-      static constexpr double centimeter = 10.*mm;
-      static constexpr double meter = 1000.*mm;
-
-      static constexpr double nanosecond = 1.;
-      static constexpr double second = 1.e+9 *nanosecond;
-
-      static constexpr double MeV = 1.;
-      static constexpr double GeV = 1.e+3*MeV;
-    }
-    ```
-
-=== "Gaudi"
-
-    ```cpp
-    // https://gitlab.cern.ch/gaudi/Gaudi/-/blob/main/GaudiKernel/include/GaudiKernel/SystemOfUnits.h
-    namespace Gaudi {
-      namespace Units {
-        static constexpr double millimeter = 1.;
-        static constexpr double millimeter2 = millimeter * millimeter;
-        static constexpr double millimeter3 = millimeter * millimeter * millimeter;
-
-        static constexpr double centimeter = 10. * millimeter;
-        static constexpr double meter = 1000. * millimeter;
-
-        static constexpr double nanosecond = 1.;
-        static constexpr double second = 1.e+9 * nanosecond;
-
-        static constexpr double MeV = 1.;
-        static constexpr double GeV = 1.e+3 * MeV;
-      }
-    }
-    ```
-
-=== "Geant4"
-
-    ```cpp
-    // https://gitlab.cern.ch/geant4/geant4/-/blob/master/source/externals/clhep/include/CLHEP/Units/SystemOfUnits.h
-    // Geant4 vendors CLHEP internally, uses same conventions
-    namespace CLHEP {
-      static constexpr double mm  = 1.;
-      static constexpr double ns  = 1.;
-      static constexpr double MeV = 1.;
-      // ... etc
-    }
-    ```
-
-=== "ROOT"
-
-    ```cpp
-    // https://github.com/root-project/root/blob/master/geom/geom/inc/TGeoSystemOfUnits.h
-    namespace TGeoUnit {
-      static constexpr double mm = 0.1;
-      static constexpr double cm = 1.;     // Base unit (centimeter)
-      static constexpr double m = 100.;
-
-      // Note: ROOT uses seconds as base, differs from others!
-      static constexpr double ns = 1.e-9;
-      static constexpr double s = 1.;      // Base unit (second)
-
-      static constexpr double GeV = 1.;    // Base unit (GeV not MeV!)
-      static constexpr double MeV = 1.e-3;
-    }
-    ```
-
-!!! warning "Inconsistencies Between Frameworks"
-
-    Note that different frameworks choose different base units:
-
-    - **_Length_**: CLHEP/Gaudi/Geant4 use mm=1, ROOT uses cm=1
-    - **_Time_**: CLHEP/Gaudi/Geant4 use ns=1, ROOT uses s=1  
-    - **_Energy_**: CLHEP/Gaudi/Geant4 use MeV=1, ROOT uses GeV=1
-
-    These differences require careful attention at framework boundaries. The **mp-units** HEP
-    system uses mm, ns, and MeV as base units (matching the majority), but supports all
-    units with proper conversions.
-
-### The "Multiply to Set, Divide to Get" Pattern
-
-Understanding the legacy unit pattern is essential for migration. In CLHEP/Geant4/Gaudi/ROOT,
-units are simply `constexpr double` scaling factors:
+Adding a proper time to a coordinate time is a classic special-relativity mistake —
+one is Lorentz-invariant, the other is frame-dependent:
 
 ```cpp
-namespace CLHEP {
-  static constexpr double mm = 1.;        // Base unit
-  static constexpr double cm = 10. * mm;  // = 10.0
-  static constexpr double MeV = 1.;       // Base unit  
-  static constexpr double GeV = 1.e+3 * MeV;  // = 1000.0
-}
+quantity tau = 10. * hep::ns * proper_time;  // particle rest frame
+quantity t   = 25. * hep::ns * coordinate_time;  // lab frame
+
+// auto wrong = tau + t;  // Compile error — different kinds ✓
 ```
 
-The pattern is:
-
-- **Multiply to create values**: `double energy = 50.0 * GeV;` stores `50000.0`
-  (in base units: MeV)
-- **Divide to extract/convert**: `double val_in_gev = energy / GeV;` returns `50.0`
-- **APIs expect bare doubles**: Function parameters are `double`, documented to expect
-  specific units
+To convert between them, the Lorentz factor must be applied explicitly:
 
 ```cpp
-// Creating values - multiply by unit constant
-double particle_energy = 50.0 * GeV;   // Stores 50000.0 MeV internally
-double track_length = 2.5 * meter;     // Stores 2500.0 mm internally
-
-// Converting - divide by unit constant  
-std::cout << "Energy in MeV: " << particle_energy / MeV << "\n";   // Prints 50000
-std::cout << "Length in cm: " << track_length / cm << "\n";        // Prints 250
-
-// API consumption - pass bare double (assumed to be in base units)
-void processParticle(double energy_MeV, double length_mm);  // Units in documentation only!
-processParticle(particle_energy, track_length);  // Passes 50000.0, 2500.0
+quantity gamma = 2.5 * lorentz_factor;
+quantity t_lab = coordinate_time(tau * gamma);  // explicit physics conversion
 ```
 
-**The fundamental problems**:
+### Wave Property: `wavelength`
 
-1. **No dimensional safety**: `double result = energy + length;` compiles without error
-2. **API ambiguity**: `setRadius(double r)` - is `r` in mm? cm? Must check documentation
-3. **Conversion confusion**: When to multiply vs divide? Easy to get backwards
-4. **Silent logic bugs**: Forgetting to multiply/divide gives wrong numerical values with
-   no warning
-
-This is why **mp-units** is valuable: it makes units and dimensions explicit in the type system.
-
-### Migration Strategy
-
-#### Phase 1: Drop-in replacements for unit constant headers
-
-Replace hand-maintained `constexpr double` unit constants with mp-units-derived
-values. All existing code that multiplies and divides by these constants continues
-to compile and produce identical results — no other changes needed at this stage.
-
-=== "Before"
-
-    ```cpp
-    // Hand-maintained constants — values must be kept in sync manually
-    namespace CLHEP {
-      static constexpr double mm  = 1.;             // Base unit
-      static constexpr double cm  = 10. * mm;       // = 10.0
-      static constexpr double MeV = 1.;             // Base unit
-      static constexpr double GeV = 1.e+3 * MeV;   // = 1000.0
-    }
-    ```
-
-=== "After"
-
-    ```cpp
-    // mp-units derives the values — no manual arithmetic, always correct
-    namespace CLHEP {
-      using namespace mp_units::hep::unit_symbols;
-      static constexpr double mm  = (1. * mm ).numerical_value_in(mm );  // = 1.0  (base unit)
-      static constexpr double cm  = (1. * cm ).numerical_value_in(mm );  // = 10.0
-      static constexpr double MeV = (1. * MeV).numerical_value_in(MeV);  // = 1.0  (base unit)
-      static constexpr double GeV = (1. * GeV).numerical_value_in(MeV);  // = 1000.0
-    }
-    ```
-
-#### Phase 2: New code uses typed quantities from the start
-
-All newly written functions and classes use `quantity<...>` types directly. Legacy
-code is untouched; new callsites enjoy full dimensional safety.
+`wavelength` is a periodic property of an oscillating field (photon or de Broglie
+wave). It is not a spatial distance and cannot be compared to or added with geometric
+lengths such as `decay_length`, `path_length`, or `radiation_length`:
 
 ```cpp
-quantity<hep::momentum[GeV / c]>
-calculate_momentum(quantity<hep::energy[GeV]> energy, quantity<hep::mass[GeV / c2]> mass)
-{
-  return sqrt(pow<2>(energy) - pow<2>(mass * c2)) / c;
-}
+quantity lambda = 400. * hep::nm * wavelength;   // optical photon wavelength
+quantity L      = 1.5 * hep::m * decay_length;   // detector geometry
+
+// auto wrong = lambda + L;  // Compile error — different kinds ✓
 ```
 
-#### Phase 3: Wrap existing interfaces with type-safe overloads
-
-Add typed setter overloads to existing classes. The class internals (data members,
-private implementation) are left completely unchanged — they still store raw
-`double`s. The new typed overloads simply convert at the public boundary and delegate
-to the existing `double`-based methods. New callers use the typed API; old callers with
-raw `double`s still compile without any modification.
-
-!!! note
-
-    The typed **getter** overloads cannot be added at this stage: C++ does not allow
-    overloading on return type alone, so the existing `double` getters must remain
-    unchanged. Only setters — which differ by parameter type — can be overloaded.
-
-#### Phase 4: Refactor internals; add typed getters; deprecate `double` API
-
-Once all external interfaces are wrapped and there is time to tackle the internals,
-refactor the class to store typed quantities as data members. Add new typed getters
-with a `_qty` suffix (e.g., `getMass_qty()`) alongside the existing `double` getters.
-Deprecate both the old `double` setters and getters, driving migration to the typed API.
-
-!!! note
-
-    Because C++ cannot overload on return type alone, typed getters must use different
-    names. The `_qty` suffix makes scripted migration easy: consumers can mechanically
-    replace `getMass_qty()` → `getMass()` in Phase 5. Old code continues to work with
-    deprecation warnings; new code uses the typed interface.
-
-#### Phase 5: Complete the migration; remove `_qty` suffix
-
-Once all call sites have migrated to the typed API (no more uses of deprecated `double`
-methods), remove the deprecated overloads and rename the typed getters to their final
-names. Since all consumers are already using typed quantities, this phase is just a
-simple rename with no logic changes.
-
-!!! tip
-
-    This phase can be done with a simple regex replace: `s/(\w+)_qty\(\)/\1()/g`.
-    For example, `getMass_qty()` → `getMass()`. All the heavy lifting (migrating to typed
-    quantities) was already done in Phase 4 when consumers switched away from the deprecated API.
-
-=== "Phase 3"
-
-    ```cpp
-    class Particle {
-      double m_mass{};    // Still raw double — internals untouched
-      double m_width{};
-      double m_charge{};
-    public:
-      // Existing double-based interface — unchanged, still works:
-      double getMass()   const { return m_mass; }
-      double getWidth()  const { return m_width; }
-      double getCharge() const { return m_charge; }
-
-      void setMass(double mass_MeV_per_c2)  { m_mass  = mass_MeV_per_c2; }
-      void setWidth(double width_MeV)       { m_width = width_MeV; }
-      void setCharge(double charge_eplus)   { m_charge = charge_eplus; }
-
-      // New typed overloads — convert at the boundary, delegate to existing setters:
-      void setMass(quantity<hep::rest_mass[MeV / c2]> mass)
-      {
-        setMass(mass.numerical_value_in(MeV / c2));
-      }
-      void setWidth(quantity<hep::decay_width[MeV]> width)
-      {
-        setWidth(width.numerical_value_in(MeV));
-      }
-      void setCharge(quantity<hep::electric_charge[eplus]> charge)
-      {
-        setCharge(charge.numerical_value_in(eplus));
-      }
-    };
-    ```
-
-=== "Phase 4"
-
-    ```cpp
-    class Particle {
-      quantity<hep::rest_mass[MeV / c2]>    m_mass{};    // Now typed quantities
-      quantity<hep::decay_width[MeV]>       m_width{};
-      quantity<hep::electric_charge[eplus]> m_charge{};
-    public:
-      // New typed interface — getters with _qty suffix and setters:
-      quantity<hep::rest_mass[MeV / c2]>    getMass_qty()   const { return m_mass; }
-      quantity<hep::decay_width[MeV]>       getWidth_qty()  const { return m_width; }
-      quantity<hep::electric_charge[eplus]> getCharge_qty() const { return m_charge; }
-
-      void setMass(quantity<hep::rest_mass[MeV / c2]> mass)         { m_mass  = mass; }
-      void setWidth(quantity<hep::decay_width[MeV]> width)          { m_width = width; }
-      void setCharge(quantity<hep::electric_charge[eplus]> charge)  { m_charge = charge; }
-
-      // Old double interface — now deprecated:
-      [[deprecated("Use getMass_qty() instead")]]
-      double getMass()   const { return m_mass.numerical_value_in(MeV / c2); }
-      [[deprecated("Use getWidth_qty() instead")]]
-      double getWidth()  const { return m_width.numerical_value_in(MeV); }
-      [[deprecated("Use getCharge_qty() instead")]]
-      double getCharge() const { return m_charge.numerical_value_in(eplus); }
-
-      [[deprecated("Use setMass(quantity<hep::rest_mass[MeV / c2]>) instead")]]
-      void setMass(double mass_MeV_per_c2)
-      {
-        setMass(mass_MeV_per_c2 * MeV / c2);
-      }
-      [[deprecated("Use setWidth(quantity<hep::decay_width[MeV]>) instead")]]
-      void setWidth(double width_MeV)
-      {
-        setWidth(width_MeV * MeV);
-      }
-      [[deprecated("Use setCharge(quantity<hep::electric_charge[eplus]>) instead")]]
-      void setCharge(double charge_eplus)
-      {
-        setCharge(charge_eplus * eplus);
-      }
-    };
-    ```
-
-=== "Phase 5"
-
-    ```cpp
-    class Particle {
-      quantity<hep::rest_mass[MeV / c2]>    m_mass{};
-      quantity<hep::decay_width[MeV]>       m_width{};
-      quantity<hep::electric_charge[eplus]> m_charge{};
-    public:
-      // Fully typed interface — deprecated methods removed, _qty suffix removed:
-      quantity<hep::rest_mass[MeV / c2]>    getMass()   const { return m_mass; }
-      quantity<hep::decay_width[MeV]>       getWidth()  const { return m_width; }
-      quantity<hep::electric_charge[eplus]> getCharge() const { return m_charge; }
-
-      void setMass(quantity<hep::rest_mass[MeV / c2]> mass)         { m_mass  = mass; }
-      void setWidth(quantity<hep::decay_width[MeV]> width)          { m_width = width; }
-      void setCharge(quantity<hep::electric_charge[eplus]> charge)  { m_charge = charge; }
-    };
-    ```
-
-
-## Type Safety in Practice
-
-The following examples demonstrate four categories of bugs that specialized quantity
-types eliminate: dimensional errors, argument swaps, unit scale mismatches, and
-same-kind confusion. Each example compares legacy `double`-based code with the
-type-safe mp-units equivalent.
-
-For all examples, consider this typical HEP API:
-
-=== "Legacy API"
-
-    ```cpp
-    // All parameters are just double - units documented in comments
-    void setParticleProperties(double mass_MeV_per_c2,   // Mass in MeV/c²
-                               double width_MeV,         // Decay width in MeV
-                               double charge);           // Electric charge
-    ```
-
-=== "Type-safe API"
-
-    ```cpp
-    // Types enforce correct dimensions and units at compile time
-    void setParticleProperties(quantity<hep::rest_mass[MeV / c2]> mass,
-                               quantity<hep::decay_width[MeV]> width,
-                               quantity<hep::electric_charge[eplus]> charge);
-    ```
-
-### Wrong Dimensions
-
-Passing a value with incorrect physical dimensions is a common error. For example,
-passing _energy_ (E) where _mass_ (E/c²) is expected. In legacy code, the compiler
-cannot detect this — both are just `double`. The wrong numerical value flows through
-calculations, producing physically incorrect results.
-
-=== "Legacy (unsafe)"
-
-    ```cpp
-    double higgs_mass = 125.0 * GeV;  // Energy in MeV (125'000.0), not mass!
-    double higgs_width = 4.0 * MeV;
-
-    // Should have divided by c_squared first - but compiler doesn't know!
-    setParticleProperties(higgs_mass, higgs_width, 0.0);
-    // Passes 125'000.0 as mass_MeV_per_c2 - catastrophically wrong
-    // ✓ Compiles  ☠️ Wrong physics  ❌ No warning
-    ```
-
-=== "mp-units (safe)"
-
-    ```cpp
-    quantity higgs_mass = 125.0 * GeV;  // Compiler knows this is energy
-    quantity higgs_width = 4.0 * MeV;
-
-    // setParticleProperties(higgs_mass, higgs_width, 0.0 * eplus);
-    // Compile error! Cannot convert energy to mass
-    // "note: no known conversion from energy to rest_mass"
-
-    // Must explicitly convert - the dimension error is caught:
-    setParticleProperties(higgs_mass / c2, higgs_width, 0.0 * eplus);  // ✓
-    ```
-
-### Arguments Swapped
-
-Function parameters with the same underlying type (`double`) but different semantic
-meanings can be accidentally swapped. The compiler has no way to detect this in
-legacy code because all parameters have identical types.
-
-=== "Legacy (unsafe)"
-
-    ```cpp
-    double higgs_mass = 125.0 * GeV / c_squared;
-    double higgs_width = 4.0 * MeV;
-
-    // Accidentally reversed the arguments!
-    setParticleProperties(higgs_width,  // should be higgs_mass
-                          higgs_mass,   // should be higgs_width
-                          0.0);
-    // Results: mass=4.0 MeV/c² (off by 31'000×), width=125'000 MeV
-    // ✓ Compiles  ☠️ Catastrophic  ❌ No warning
-    ```
-
-=== "mp-units (safe)"
-
-    ```cpp
-    quantity higgs_mass = 125.0 * GeV / c2;
-    quantity higgs_width = 4.0 * MeV;
-
-    // setParticleProperties(higgs_width, higgs_mass, 0.0 * eplus);
-    // Compile error! Types don't match
-    // "note: no known conversion from decay_width to rest_mass"
-
-    setParticleProperties(higgs_mass, higgs_width, 0.0 * eplus);  // ✓
-    ```
-
-### Wrong Unit Scale (Framework Mismatch)
-
-Different HEP frameworks use different base units (ROOT uses GeV=1, CLHEP uses MeV=1).
-When interfacing between frameworks, forgetting to convert units produces values
-off by factors of 1000 or more. In legacy code, these are just `double` values —
-the compiler cannot detect the mismatch.
-
-=== "Legacy (unsafe)"
-
-    ```cpp
-    double higgs_mass = 125.0 * GeV / c_squared;
-    double higgs_width = get_from_ROOT();  // Returns 0.004 (ROOT uses GeV=1)
-
-    // Forgot to convert ROOT's GeV to CLHEP's MeV!
-    setParticleProperties(higgs_mass, higgs_width, 0.0);
-    // API expects MeV, receives 0.004 → width = 0.004 MeV (off by 1000×!)
-    // ✓ Compiles  ☠️ 1000× wrong  ❌ No warning
-    ```
-
-=== "mp-units (safe)"
-
-    ```cpp
-    quantity higgs_mass = 125.0 * GeV / c2;
-    double higgs_width = get_from_ROOT();  // Returns bare 0.004
-
-    // setParticleProperties(higgs_mass, higgs_width, 0.0 * eplus);
-    // Compile error! Cannot convert double to quantity
-    // Forces explicit unit attachment
-
-    // Must specify the unit - conversion happens automatically:
-    setParticleProperties(higgs_mass, higgs_width * GeV, 0.0 * eplus);
-    // ✓ Compiles! 0.004 * GeV = 4 MeV (automatic conversion)
-    ```
-
-### Wrong Quantity of the Same Kind
-
-Some physically distinct concepts share the same dimension but have different meanings.
-For example, _invariant mass_ reconstructed from decay products vs. _rest mass_ of a
-particle species. Mixing these is physically meaningless even though they're
-dimensionally identical. Legacy `double` code cannot distinguish them.
-
-=== "Legacy (unsafe)"
-
-    ```cpp
-    // From 4-momenta reconstruction
-    double compute_invariant_mass();
-
-    double m_inv = compute_invariant_mass();
-    double higgs_width = 4.0 * MeV;
-
-    // Invariant mass of ONE EVENT ≠ rest mass of THE HIGGS BOSON
-    setParticleProperties(m_inv, higgs_width, 0.0);
-    // Both are mass dimension (MeV/c²) - compiler cannot tell them apart
-    // ✓ Compiles  ☠️ Wrong physics  ❌ No warning
-    ```
-
-=== "mp-units (safe)"
-
-    ```cpp
-    // From 4-momenta reconstruction
-    quantity<hep::invariant_mass[GeV / c2]> compute_invariant_mass();
-
-    quantity m_inv = compute_invariant_mass();
-    quantity higgs_width = hep::decay_width(4.0 * MeV);
-
-    // setParticleProperties(m_inv, higgs_width, 0.0 * eplus);
-    // Compile error! Wrong quantity kind
-    // "note: no known conversion from invariant_mass to rest_mass"
-    // Physics constraints enforced by type system
-    ```
-
-### Summary
-
-The mp-units type system makes all four classes of error **impossible** — they're
-caught at compile time before the code ever runs. The physics constraints are
-enforced by the compiler, not just by documentation and code review.
-
-The type hierarchy also captures physical relationships. For _energy_, adding child
-quantities yields their common parent, enforcing E = KE + mc²:
+### Material Characteristic Lengths: `radiation_length` and `interaction_length`
+
+These are properties of a material, not distances travelled by a particle. They appear
+as **denominators** in physics expressions (number of radiation lengths traversed = path
+/ X₀), never as addends.
+
+- **`radiation_length` (X₀)**: mean distance over which an electron loses 1/e of its
+  energy through Bremsstrahlung — an electromagnetic material property.
+- **`interaction_length` (λ_I)**: mean free path before a hadronic nuclear interaction —
+  a nuclear material property.
+- **`nuclear_interaction_length`**: a specialisation of `interaction_length` for nuclear
+  (as opposed to hadronic-elastic) interactions.
+
+All three are distinct from each other and from geometric lengths:
 
 ```cpp
-using namespace mp_units::hep::unit_symbols;
+quantity X0      = 88.97 * hep::mm * radiation_length;      // lead X₀
+quantity lambda_I = 194.4 * hep::mm * interaction_length;   // lead λ_I
+quantity path    = 50. * hep::mm * path_length;
 
-quantity KE = hep::kinetic_energy(100. * GeV);
-quantity E0 = hep::rest_mass_energy(938.27 * MeV);  // proton rest energy
+// auto wrong1 = X0 + lambda_I;  // Compile error — different kinds ✓
+// auto wrong2 = X0 + path;      // Compile error — different kinds ✓
 
-// Addition yields the common parent: total_energy
-quantity E_total = KE + E0;  // quantity<hep::total_energy[...]>
-
-// The result cannot be silently narrowed back to a child type:
-// quantity<hep::kinetic_energy[MeV]> KE2 = E_total;    // Compile error!
-// quantity<hep::rest_mass_energy[MeV]> E02 = E_total;  // Compile error!
+// Correct usage: use as a denominator
+quantity n_X0 = path / X0;                             // dimensionless: number of X₀ traversed
 ```
 
-For other quantity categories (_lengths_, _times_, _masses_, _angles_), specialized types
-are siblings — they prevent implicit mixing but share a common parent for explicit
-conversions.
+### Dimensionless Relativistic Quantities
+
+`lorentz_factor` (γ) and `relativistic_beta` (β) are dimensionless quantities with
+specific physical meaning that must not be mixed with generic dimensionless values or
+with each other:
+
+- **`lorentz_factor` (γ = E/E₀)**: characterises relativistic time dilation and length
+  contraction; ranges from 1 (at rest) to ∞.
+- **`relativistic_beta` (β = v/c)**: velocity expressed as a fraction of the speed of
+  light; ranges from 0 to 1. Related to γ by $\beta = \sqrt{1 - 1/\gamma^2}$.
+- **`phase`**: quantum mechanical phase angle — a cyclic, dimensionless quantity
+  incompatible with both γ and β and with the angular `angle` kind.
+
+```cpp
+quantity gamma  = 10. * lorentz_factor;
+quantity beta   = 0.995 * relativistic_beta;
+quantity phi    = 1.57 * phase;
+
+// auto wrong1 = gamma + beta;   // Compile error — different kinds ✓
+// auto wrong2 = gamma + phi;    // Compile error — different kinds ✓
+// auto wrong3 = gamma + 1.;     // Compile error — not a plain dimensionless ✓
+
+// Physics: recover beta from gamma
+quantity beta_from_gamma = relativistic_beta(sqrt(1. - 1. / pow<2>(gamma / lorentz_factor)));
+```
+
 
 ## Physical Constants with CODATA Versions
 
