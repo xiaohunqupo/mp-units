@@ -72,6 +72,25 @@ using type_list_map = type_list_map_impl<From, To>::type;
 
 
 // element
+#ifdef __cpp_pack_indexing
+
+// C++26: Pack indexing (P2662) gives a compiler-native O(1) element access,
+// eliminating the indexed_type_list multiple-inheritance machinery entirely.
+template<typename List, std::size_t I>
+struct type_list_element_impl;
+
+template<template<typename...> typename List, typename... Types, std::size_t I>
+struct type_list_element_impl<List<Types...>, I> {
+  using type = Types...[I];
+};
+
+template<TypeList List, std::size_t I>
+using type_list_element = type_list_element_impl<List, I>::type;
+
+#else
+
+// C++20/23: Use the "indexed" multiple-inheritance trick to avoid O(N) recursive
+// instantiation depth. The compiler resolves the correct leaf via overload resolution.
 template<std::size_t I, typename T>
 struct type_list_leaf {
   using type = T;
@@ -94,6 +113,8 @@ using type_list_element_indexed = typename decltype(type_list_element_func<I>(st
 
 template<TypeList List, std::size_t I>
 using type_list_element = type_list_element_indexed<type_list_map<List, indexed_type_list>, I>;
+
+#endif
 
 // front
 template<typename List>
@@ -153,12 +174,28 @@ using type_list_join = type_list_join_impl<Lists...>::type;
 template<typename List, typename First, typename Second>
 struct type_list_split_impl;
 
+static_assert(__cpp_pack_indexing);
+
+#ifdef __cpp_pack_indexing
+
+// C++26: Direct pack indexing avoids building an indexed_type_list (N base classes)
+// and then re-traversing it for every element of both output lists.
+template<template<typename...> typename List, typename... Args, std::size_t... First, std::size_t... Second>
+struct type_list_split_impl<List<Args...>, std::index_sequence<First...>, std::index_sequence<Second...>> {
+  using first_list = List<Args...[First]...>;
+  using second_list = List<Args...[sizeof...(First) + Second]...>;
+};
+
+#else
+
 template<template<typename...> typename List, typename... Args, std::size_t... First, std::size_t... Second>
 struct type_list_split_impl<List<Args...>, std::index_sequence<First...>, std::index_sequence<Second...>> {
   using indexed_list = indexed_type_list<Args...>;
   using first_list = List<type_list_element_indexed<indexed_list, First>...>;
   using second_list = List<type_list_element_indexed<indexed_list, sizeof...(First) + Second>...>;
 };
+
+#endif
 
 template<TypeList List, std::size_t N>
   requires(N <= type_list_size<List>)
