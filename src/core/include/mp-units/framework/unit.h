@@ -444,6 +444,9 @@ template<Unit U1, UnitConvertibleTo<U1{}> U2>
   return get_common_scaled_unit(get_common_scaled_unit(u1, u2), u3, rest...);
 }
 
+template<Unit U1, Unit U2, Unit... Rest>
+constexpr auto common_unit_scaled_result = get_common_scaled_unit(U1{}, U2{}, Rest{}...);
+
 }  // namespace detail
 
 /**
@@ -461,10 +464,9 @@ template<Unit U1, UnitConvertibleTo<U1{}> U2>
  *       instantiate this type automatically based on the unit arithmetic equation provided by the user.
  */
 template<Unit U1, Unit U2, Unit... Rest>
-struct common_unit final : decltype(detail::get_common_scaled_unit(U1{}, U2{}, Rest{}...))::_base_type_
-{
+struct common_unit final : decltype(detail::common_unit_scaled_result<U1, U2, Rest...>)::_base_type_ {
   using _base_type_ = common_unit;  // exposition only
-  static constexpr auto _common_unit_ = detail::get_common_scaled_unit(U1{}, U2{}, Rest{}...);
+  static constexpr auto _common_unit_ = detail::common_unit_scaled_result<U1, U2, Rest...>;
 };
 
 namespace detail {

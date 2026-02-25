@@ -159,13 +159,21 @@ template<QuantitySpec Q>
 
 template<NamedQuantitySpec Lhs, NamedQuantitySpec Rhs, NamedQuantitySpec LhsRoot, NamedQuantitySpec RhsRoot,
          NamedQuantitySpec LhsKindRoot, NamedQuantitySpec RhsKindRoot>
+consteval bool quantity_spec_less_value()
+{
+  constexpr auto lhs_root_name = detail::type_name<LhsRoot>();
+  constexpr auto rhs_root_name = detail::type_name<RhsRoot>();
+  if (lhs_root_name != rhs_root_name) return lhs_root_name < rhs_root_name;
+  constexpr auto lhs_kind_name = detail::type_name<LhsKindRoot>();
+  constexpr auto rhs_kind_name = detail::type_name<RhsKindRoot>();
+  if (lhs_kind_name != rhs_kind_name) return lhs_kind_name < rhs_kind_name;
+  return detail::type_name<Lhs>() < detail::type_name<Rhs>();
+}
+
+template<NamedQuantitySpec Lhs, NamedQuantitySpec Rhs, NamedQuantitySpec LhsRoot, NamedQuantitySpec RhsRoot,
+         NamedQuantitySpec LhsKindRoot, NamedQuantitySpec RhsKindRoot>
 struct quantity_spec_less_impl :
-    std::bool_constant<(detail::type_name<LhsRoot>() < detail::type_name<RhsRoot>()) ||
-                       (detail::type_name<LhsRoot>() == detail::type_name<RhsRoot>() &&
-                        detail::type_name<LhsKindRoot>() < detail::type_name<RhsKindRoot>()) ||
-                       (detail::type_name<LhsRoot>() == detail::type_name<RhsRoot>() &&
-                        detail::type_name<LhsKindRoot>() == detail::type_name<RhsKindRoot>() &&
-                        detail::type_name<Lhs>() < detail::type_name<Rhs>())> {};
+    std::bool_constant<quantity_spec_less_value<Lhs, Rhs, LhsRoot, RhsRoot, LhsKindRoot, RhsKindRoot>()> {};
 
 template<NamedQuantitySpec Lhs, NamedQuantitySpec Rhs>
 struct quantity_spec_less :

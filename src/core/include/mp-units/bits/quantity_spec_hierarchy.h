@@ -34,6 +34,9 @@ namespace mp_units::detail {
     return 1;
 }
 
+template<QuantitySpec Q>
+constexpr std::size_t hierarchy_path_length_v = hierarchy_path_length(Q{});
+
 template<std::size_t Offset>
   requires(Offset >= 0)
 [[nodiscard]] consteval QuantitySpec auto hierarchy_path_advance(QuantitySpec auto q)
@@ -61,8 +64,8 @@ template<QuantitySpec A, QuantitySpec B>
   if constexpr (is_same_v<A, B>)
     return true;
   else {
-    constexpr std::size_t a_length = hierarchy_path_length(A{});
-    constexpr std::size_t b_length = hierarchy_path_length(B{});
+    constexpr std::size_t a_length = hierarchy_path_length_v<A>;
+    constexpr std::size_t b_length = hierarchy_path_length_v<B>;
     if constexpr (a_length > b_length)
       return have_common_base_in_hierarchy_of_equal_length(hierarchy_path_advance<a_length - b_length>(a), b);
     else
@@ -84,8 +87,8 @@ template<QuantitySpec A, QuantitySpec B>
   requires(have_common_base(A{}, B{}))
 [[nodiscard]] consteval QuantitySpec auto get_common_base(A a, B b)
 {
-  constexpr std::size_t a_length = hierarchy_path_length(A{});
-  constexpr std::size_t b_length = hierarchy_path_length(B{});
+  constexpr std::size_t a_length = hierarchy_path_length_v<A>;
+  constexpr std::size_t b_length = hierarchy_path_length_v<B>;
   if constexpr (a_length > b_length)
     return get_common_base_for_hierarchy_of_equal_length(hierarchy_path_advance<a_length - b_length>(a), b);
   else
@@ -95,20 +98,28 @@ template<QuantitySpec A, QuantitySpec B>
 template<QuantitySpec Child, QuantitySpec Parent>
 [[nodiscard]] consteval bool is_child_of(Child ch, Parent p)
 {
-  constexpr std::size_t child_length = hierarchy_path_length(Child{});
-  constexpr std::size_t parent_length = hierarchy_path_length(Parent{});
+  constexpr std::size_t child_length = hierarchy_path_length_v<Child>;
+  constexpr std::size_t parent_length = hierarchy_path_length_v<Parent>;
   if constexpr (parent_length >= child_length)
     return false;
   else
     return hierarchy_path_advance<child_length - parent_length>(ch) == p;
 }
 
-[[nodiscard]] consteval QuantitySpec auto get_hierarchy_root(QuantitySpec auto q)
+[[nodiscard]] consteval QuantitySpec auto get_hierarchy_root_impl(QuantitySpec auto q)
 {
   if constexpr (requires { q._parent_; })
-    return get_hierarchy_root(q._parent_);
+    return get_hierarchy_root_impl(q._parent_);
   else
     return q;
+}
+
+template<QuantitySpec Q>
+constexpr QuantitySpec auto get_hierarchy_root_result = get_hierarchy_root_impl(Q{});
+
+[[nodiscard]] consteval QuantitySpec auto get_hierarchy_root(QuantitySpec auto q)
+{
+  return get_hierarchy_root_result<decltype(q)>;
 }
 
 }  // namespace mp_units::detail
