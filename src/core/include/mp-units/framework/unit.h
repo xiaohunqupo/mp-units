@@ -236,11 +236,27 @@ struct unit_interface {
     return kind_of<detail::get_associated_quantity(U{})>;
   }
 
-  template<std::intmax_t Num, std::intmax_t Den = 1, Unit U>
+  // Clang <= 18 does not support default template arguments in friend function templates.
+  // The two overloads below are a workaround. The intended library API (and the one that
+  // should be proposed for ISO standardization) is a single function template:
+  //
+  //   template<std::intmax_t Num, std::intmax_t Den = 1, Unit U>
+  //     requires(Den != 0)
+  //   [[nodiscard]] friend consteval Unit auto pow(U u)
+  //   {
+  //     return detail::expr_pow<Num, Den, derived_unit, struct one>(u);
+  //   }
+  template<std::intmax_t Num, std::intmax_t Den, Unit U>
     requires(Den != 0)
   [[nodiscard]] friend consteval Unit auto pow(U u)
   {
     return detail::expr_pow<Num, Den, derived_unit, struct one>(u);
+  }
+
+  template<std::intmax_t Num, Unit U>
+  [[nodiscard]] friend consteval Unit auto pow(U u)
+  {
+    return detail::expr_pow<Num, 1, derived_unit, struct one>(u);
   }
 
   [[nodiscard]] friend consteval Unit auto sqrt(Unit auto u) { return pow<1, 2>(u); }
@@ -359,14 +375,14 @@ struct named_unit<Symbol, QS, PO> : detail::unit_interface {
  * @tparam Unit a unit for which we provide a special name
  */
 template<symbol_text Symbol, Unit auto U>
-  requires(!Symbol.empty())
+  requires(!Symbol.empty()) && detail::magnitude_is_positive<mp_units::get_canonical_unit(U).mag>
 struct named_unit<Symbol, U> : decltype(U)::_base_type_ {
   using _base_type_ = named_unit;           // exposition only
   static constexpr auto _symbol_ = Symbol;  ///< Unique unit identifier
 };
 
 template<symbol_text Symbol, Unit auto U, PointOrigin auto PO>
-  requires(!Symbol.empty())
+  requires(!Symbol.empty()) && detail::magnitude_is_positive<mp_units::get_canonical_unit(U).mag>
 struct named_unit<Symbol, U, PO> : decltype(U)::_base_type_ {
   using _base_type_ = named_unit;           // exposition only
   static constexpr auto _symbol_ = Symbol;  ///< Unique unit identifier
@@ -383,7 +399,8 @@ struct named_unit<Symbol, U, PO> : decltype(U)::_base_type_ {
  * @tparam QuantitySpec a specification of a quantity to be measured with this unit
  */
 template<symbol_text Symbol, Unit auto U, detail::QuantityKindSpec auto QS>
-  requires(!Symbol.empty()) && (QS.dimension == detail::get_associated_quantity(U).dimension)
+  requires(!Symbol.empty()) && (QS.dimension == detail::get_associated_quantity(U).dimension) &&
+          detail::magnitude_is_positive<mp_units::get_canonical_unit(U).mag>
 struct named_unit<Symbol, U, QS> : decltype(U)::_base_type_ {
   using _base_type_ = named_unit;           // exposition only
   static constexpr auto _symbol_ = Symbol;  ///< Unique unit identifier
@@ -391,7 +408,8 @@ struct named_unit<Symbol, U, QS> : decltype(U)::_base_type_ {
 };
 
 template<symbol_text Symbol, Unit auto U, detail::QuantityKindSpec auto QS, PointOrigin auto PO>
-  requires(!Symbol.empty()) && (QS.dimension == detail::get_associated_quantity(U).dimension)
+  requires(!Symbol.empty()) && (QS.dimension == detail::get_associated_quantity(U).dimension) &&
+          detail::magnitude_is_positive<mp_units::get_canonical_unit(U).mag>
 struct named_unit<Symbol, U, QS, PO> : decltype(U)::_base_type_ {
   using _base_type_ = named_unit;           // exposition only
   static constexpr auto _symbol_ = Symbol;  ///< Unique unit identifier

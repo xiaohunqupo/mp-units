@@ -83,11 +83,27 @@ struct dimension_interface {
     return is_same_v<Lhs, Rhs>;
   }
 
-  template<std::intmax_t Num, std::intmax_t Den = 1, Dimension D>
+  // Clang <= 18 does not support default template arguments in friend function templates.
+  // The two overloads below are a workaround. The intended library API (and the one that
+  // should be proposed for ISO standardization) is a single function template:
+  //
+  //   template<std::intmax_t Num, std::intmax_t Den = 1, Dimension D>
+  //     requires(Den != 0)
+  //   [[nodiscard]] friend consteval Dimension auto pow(D d)
+  //   {
+  //     return detail::expr_pow<Num, Den, derived_dimension, struct dimension_one>(d);
+  //   }
+  template<std::intmax_t Num, std::intmax_t Den, Dimension D>
     requires(Den != 0)
   [[nodiscard]] friend consteval Dimension auto pow(D d)
   {
     return detail::expr_pow<Num, Den, derived_dimension, struct dimension_one>(d);
+  }
+
+  template<std::intmax_t Num, Dimension D>
+  [[nodiscard]] friend consteval Dimension auto pow(D d)
+  {
+    return detail::expr_pow<Num, 1, derived_dimension, struct dimension_one>(d);
   }
 
   [[nodiscard]] friend consteval Dimension auto sqrt(Dimension auto d) { return pow<1, 2>(d); }

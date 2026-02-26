@@ -207,12 +207,32 @@ struct quantity_spec_interface_base {
     return is_same_v<Lhs, Rhs>;
   }
 
-  template<std::intmax_t Num, std::intmax_t Den = 1, QuantitySpec Q>
+  // Clang <= 18 does not support default template arguments in friend function templates.
+  // The two overloads below are a workaround. The intended library API (and the one that
+  // should be proposed for ISO standardization) is a single function template:
+  //
+  //   template<std::intmax_t Num, std::intmax_t Den = 1, QuantitySpec Q>
+  //     requires(Den != 0)
+  //   [[nodiscard]] friend consteval QuantitySpec auto pow(Q q)
+  //   {
+  //     return detail::clone_kind_of<Q{}>(
+  //       detail::expr_pow<Num, Den, derived_quantity_spec, struct dimensionless,
+  //                        detail::type_list_of_quantity_spec_less>(detail::remove_kind(q)));
+  //   }
+  template<std::intmax_t Num, std::intmax_t Den, QuantitySpec Q>
     requires(Den != 0)
   [[nodiscard]] friend consteval QuantitySpec auto pow(Q q)
   {
     return detail::clone_kind_of<Q{}>(
       detail::expr_pow<Num, Den, derived_quantity_spec, struct dimensionless, detail::type_list_of_quantity_spec_less>(
+        detail::remove_kind(q)));
+  }
+
+  template<std::intmax_t Num, QuantitySpec Q>
+  [[nodiscard]] friend consteval QuantitySpec auto pow(Q q)
+  {
+    return detail::clone_kind_of<Q{}>(
+      detail::expr_pow<Num, 1, derived_quantity_spec, struct dimensionless, detail::type_list_of_quantity_spec_less>(
         detail::remove_kind(q)));
   }
 
