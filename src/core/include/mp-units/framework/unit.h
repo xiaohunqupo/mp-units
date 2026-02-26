@@ -224,6 +224,12 @@ struct unit_interface {
       return lhs_canonical.mag == rhs_canonical.mag && lhs_canonical.reference_unit == rhs_canonical.reference_unit;
     }
   }
+
+  template<Unit Self>
+  [[nodiscard]] friend consteval Self get_unit(Self self)
+  {
+    return self;
+  }
 };
 
 template<Unit U, bool = requires { U::_point_origin_; }>

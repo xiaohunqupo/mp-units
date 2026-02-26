@@ -76,6 +76,8 @@ template<Unit U>
  */
 template<QuantitySpec Q, Unit U>
 struct reference {
+  [[nodiscard]] friend consteval Unit auto get_unit(reference) { return U{}; }
+
   template<typename Q2, typename U2>
   [[nodiscard]] friend consteval bool operator==(reference, reference<Q2, U2>)
   {
@@ -194,7 +196,7 @@ struct reference {
 
 template<typename FwdRep, Reference R,
          RepresentationOf<mp_units::get_quantity_spec(R{})> Rep = std::remove_cvref_t<FwdRep>>
-  requires(!detail::OffsetUnit<decltype(mp_units::get_unit(R{}))>)
+  requires(!detail::OffsetUnit<decltype(get_unit(R{}))>)
 [[nodiscard]] constexpr quantity<R{}, Rep> operator*(FwdRep&& lhs, R r)
 {
   return quantity{std::forward<FwdRep>(lhs), r};
@@ -202,7 +204,7 @@ template<typename FwdRep, Reference R,
 
 template<typename FwdRep, Reference R,
          RepresentationOf<mp_units::get_quantity_spec(R{})> Rep = std::remove_cvref_t<FwdRep>>
-  requires(!detail::OffsetUnit<decltype(mp_units::get_unit(R{}))>)
+  requires(!detail::OffsetUnit<decltype(get_unit(R{}))>)
 [[nodiscard]] constexpr Quantity auto operator/(FwdRep&& lhs, R)
 {
   return quantity{std::forward<FwdRep>(lhs), inverse(R{})};
@@ -210,7 +212,7 @@ template<typename FwdRep, Reference R,
 
 template<typename FwdRep, Reference R,
          RepresentationOf<mp_units::get_quantity_spec(R{})> Rep = std::remove_cvref_t<FwdRep>>
-  requires detail::OffsetUnit<decltype(mp_units::get_unit(R{}))>
+  requires detail::OffsetUnit<decltype(get_unit(R{}))>
 [[deprecated(
   "2.3.0: References using offset units (e.g., temperatures) should be constructed with the `delta` or `point` "
   "helpers")]] constexpr auto
@@ -221,7 +223,7 @@ operator*(FwdRep&& lhs, R r)
 
 template<typename FwdRep, Reference R,
          RepresentationOf<mp_units::get_quantity_spec(R{})> Rep = std::remove_cvref_t<FwdRep>>
-  requires detail::OffsetUnit<decltype(mp_units::get_unit(R{}))>
+  requires detail::OffsetUnit<decltype(get_unit(R{}))>
 [[deprecated(
   "2.3.0: References using offset units (e.g., temperatures) should be constructed with the `delta` or `point` "
   "helpers")]] constexpr auto
@@ -285,15 +287,15 @@ constexpr auto operator/(R, Q&& q) = delete;
 template<Reference R1, Reference R2, Reference... Rest>
 [[nodiscard]] consteval Reference auto get_common_reference(R1 r1, R2 r2, Rest... rest)
   requires(!(Unit<R1> && Unit<R2> && (... && Unit<Rest>))) && requires {
-    mp_units::get_common_quantity_spec(mp_units::get_quantity_spec(r1), mp_units::get_quantity_spec(r2),
+    mp_units::get_common_quantity_spec(get_quantity_spec(r1), mp_units::get_quantity_spec(r2),
                                        mp_units::get_quantity_spec(rest)...);
-    mp_units::get_common_unit(mp_units::get_unit(r1), mp_units::get_unit(r2), mp_units::get_unit(rest)...);
+    mp_units::get_common_unit(get_unit(r1), get_unit(r2), get_unit(rest)...);
   }
 {
-  return detail::reference_t<
-    mp_units::get_common_quantity_spec(mp_units::get_quantity_spec(R1{}), mp_units::get_quantity_spec(R2{}),
-                                       mp_units::get_quantity_spec(rest)...),
-    mp_units::get_common_unit(mp_units::get_unit(R1{}), mp_units::get_unit(R2{}), mp_units::get_unit(rest)...)>{};
+  return detail::reference_t<mp_units::get_common_quantity_spec(mp_units::get_quantity_spec(R1{}),
+                                                                mp_units::get_quantity_spec(R2{}),
+                                                                mp_units::get_quantity_spec(rest)...),
+                             mp_units::get_common_unit(get_unit(R1{}), get_unit(R2{}), get_unit(rest)...)>{};
 }
 
 MP_UNITS_EXPORT_END

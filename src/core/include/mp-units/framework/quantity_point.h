@@ -151,8 +151,8 @@ constexpr bool is_specialization_of_zeroth_point_origin<zeroth_point_origin_<QS>
 MP_UNITS_EXPORT template<Reference R>
 [[nodiscard]] consteval PointOriginFor<mp_units::get_quantity_spec(R{})> auto default_point_origin(R)
 {
-  if constexpr (requires { mp_units::get_unit(R{})._point_origin_; })
-    return mp_units::get_unit(R{})._point_origin_;
+  if constexpr (requires { get_unit(R{})._point_origin_; })
+    return get_unit(R{})._point_origin_;
   else
     return zeroth_point_origin<mp_units::get_quantity_spec(R{})>;
 }
@@ -189,7 +189,7 @@ public:
   static constexpr Reference auto reference = R;
   static constexpr QuantitySpec auto quantity_spec = mp_units::get_quantity_spec(reference);
   static constexpr Dimension auto dimension = quantity_spec.dimension;
-  static constexpr Unit auto unit = mp_units::get_unit(reference);
+  static constexpr Unit auto unit = get_unit(reference);
   static constexpr PointOrigin auto absolute_point_origin = detail::get_absolute_point_origin(PO);
   static constexpr PointOrigin auto point_origin = PO;
   using rep = Rep;
@@ -259,7 +259,7 @@ public:
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
     quantity_point(const QP& qp) :
       quantity_from_origin_is_an_implementation_detail_(quantity_point_like_traits<QP>::to_numerical_value(qp),
-                                                        mp_units::get_unit(quantity_point_like_traits<QP>::reference))
+                                                        get_unit(quantity_point_like_traits<QP>::reference))
   {
   }
 
@@ -434,7 +434,7 @@ public:
   // compound assignment operators
   template<auto R2, typename Rep2>
     requires(mp_units::implicitly_convertible(mp_units::get_quantity_spec(R2), quantity_spec)) &&
-            detail::ValuePreservingConversion<mp_units::get_unit(R2), Rep2, unit, rep> &&
+            detail::ValuePreservingConversion<get_unit(R2), Rep2, unit, rep> &&
             requires(const quantity_type q) { quantity_from_origin_is_an_implementation_detail_ += q; }
   constexpr quantity_point& operator+=(const quantity<R2, Rep2>& q) &
   {
@@ -444,7 +444,7 @@ public:
 
   template<auto R2, typename Rep2>
     requires(mp_units::implicitly_convertible(mp_units::get_quantity_spec(R2), quantity_spec)) &&
-            detail::ValuePreservingConversion<mp_units::get_unit(R2), Rep2, unit, rep> &&
+            detail::ValuePreservingConversion<get_unit(R2), Rep2, unit, rep> &&
             requires(const quantity_type q) { quantity_from_origin_is_an_implementation_detail_ -= q; }
   constexpr quantity_point& operator-=(const quantity<R2, Rep2>& q) &
   {

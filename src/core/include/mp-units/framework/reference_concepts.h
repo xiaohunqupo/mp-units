@@ -44,14 +44,6 @@ template<typename Q, typename U>
   return Q{};
 }
 
-[[nodiscard]] consteval Unit auto get_unit(Unit auto u) { return u; }
-
-template<typename Q, typename U>
-[[nodiscard]] consteval Unit auto get_unit(reference<Q, U>)
-{
-  return U{};
-}
-
 /**
  * @brief A concept matching all references in the library.
  *
