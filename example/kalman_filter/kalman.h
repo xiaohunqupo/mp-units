@@ -308,9 +308,7 @@ public:
     std::basic_string<Char> quantity_buffer;
     format_system_state(std::back_inserter(quantity_buffer), s, ctx, std::index_sequence_for<QPs...>{});
 
-    std::basic_string<Char> fill_align_width_format_str;
-    mp_units::detail::format_global_buffer(std::back_inserter(fill_align_width_format_str), specs);
-    return MP_UNITS_STD_FMT::vformat_to(ctx.out(), fill_align_width_format_str,
-                                        MP_UNITS_STD_FMT::make_format_args(quantity_buffer));
+    return mp_units::detail::write_padded<Char>(ctx.out(), std::basic_string_view<Char>{quantity_buffer}, specs.width,
+                                                specs.align, specs.fill);
   }
 };

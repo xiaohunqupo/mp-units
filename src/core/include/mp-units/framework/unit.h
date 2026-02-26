@@ -984,8 +984,6 @@ class MP_UNITS_STD_FMT::formatter<U, Char> {
   struct format_specs : mp_units::detail::fill_align_width_format_specs<Char>, mp_units::unit_symbol_formatting {};
   format_specs specs_{};
 
-  std::basic_string_view<Char> fill_align_width_format_str_;
-
   template<std::forward_iterator It>
   constexpr It parse_unit_specs(It begin, It end)
   {
@@ -1031,7 +1029,6 @@ public:
     auto end = ctx.end();
 
     auto it = parse_fill_align_width(ctx, begin, end, specs_);
-    fill_align_width_format_str_ = {begin, it};
     if (it == end) return it;
 
     return parse_unit_specs(it, end);
@@ -1048,11 +1045,8 @@ public:
       return mp_units::unit_symbol_to<Char>(ctx.out(), u, specs);
     std::basic_string<Char> unit_buffer;
     mp_units::unit_symbol_to<Char>(std::back_inserter(unit_buffer), u, specs);
-
-    const std::basic_string<Char> global_format_buffer =
-      "{:" + std::basic_string<Char>{fill_align_width_format_str_} + "}";
-    return MP_UNITS_STD_FMT::vformat_to(ctx.out(), global_format_buffer,
-                                        MP_UNITS_STD_FMT::make_format_args(unit_buffer));
+    return mp_units::detail::write_padded<Char>(ctx.out(), std::basic_string_view<Char>{unit_buffer}, specs.width,
+                                                specs.align, specs.fill);
   }
 };
 

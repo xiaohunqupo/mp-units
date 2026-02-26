@@ -1080,18 +1080,25 @@ public:
     auto specs = specs_;
     mp_units::detail::handle_dynamic_spec<mp_units::detail::width_checker>(specs.width, specs.width_ref, ctx);
 
+    if (specs.width == 0 && modifiers_format_str_.empty()) {
+      // Common fast path: call pre-parsed sub-formatters directly — no vformat_to, no allocation
+      ctx.advance_to(rep_formatter_.format(q.numerical_value_ref_in(q.unit), ctx));
+      if constexpr (mp_units::space_before_unit_symbol<unit>) {
+        auto it = ctx.out();
+        *it++ = ' ';
+        ctx.advance_to(it);
+      }
+      return unit_formatter_.format(q.unit, ctx);
+    }
     if (specs.width == 0) {
-      // Avoid extra copying if width is not specified
+      // Custom modifiers, no width
       format_quantity(ctx.out(), q, ctx);
       return ctx.out();
     }
     std::basic_string<Char> quantity_buffer;
     format_quantity(std::back_inserter(quantity_buffer), q, ctx);
-
-    std::basic_string<Char> fill_align_width_format_str;
-    mp_units::detail::format_global_buffer(std::back_inserter(fill_align_width_format_str), specs);
-    return MP_UNITS_STD_FMT::vformat_to(ctx.out(), fill_align_width_format_str,
-                                        MP_UNITS_STD_FMT::make_format_args(quantity_buffer));
+    return mp_units::detail::write_padded<Char>(ctx.out(), std::basic_string_view<Char>{quantity_buffer}, specs.width,
+                                                specs.align, specs.fill);
   }
 };
 

@@ -67,28 +67,28 @@ template<std::forward_iterator It, typename Specs>
   return mp_units::detail::parse_dynamic_spec(it, end, specs.width, specs.width_ref, ctx);
 }
 
-template<typename Char, std::output_iterator<Char> It>
-constexpr It format_global_buffer(It out, const fill_align_width_format_specs<Char>& specs)
+/**
+ * @brief Writes a string to an output iterator with fill/align/width padding.
+ *
+ * Avoids instantiating format_to/vformat_to infrastructure for the common padding use-case
+ * inside formatter<Unit>, formatter<Dimension>, and formatter<quantity> specializations.
+ */
+template<typename Char, std::output_iterator<Char> Out>
+constexpr Out write_padded(Out out, std::basic_string_view<Char> s, int width, fmt_align align,
+                           const fill_t<Char>& fill)
 {
-  MP_UNITS_STD_FMT::format_to(out, "{{:");
-  if (specs.fill.size() != 1 || specs.fill[0] != ' ') {
-    MP_UNITS_STD_FMT::format_to(out, "{}", specs.fill.data());
-  }
-  switch (specs.align) {
-    case fmt_align::left:
-      MP_UNITS_STD_FMT::format_to(out, "<");
-      break;
-    case fmt_align::right:
-      MP_UNITS_STD_FMT::format_to(out, ">");
-      break;
-    case fmt_align::center:
-      MP_UNITS_STD_FMT::format_to(out, "^");
-      break;
-    default:
-      break;
-  }
-  if (specs.width >= 1) MP_UNITS_STD_FMT::format_to(out, "{}", specs.width);
-  return MP_UNITS_STD_FMT::format_to(out, "}}");
+  const int len = static_cast<int>(s.size());
+  const int pad = (width > len) ? width - len : 0;
+  const int lpad = (align == fmt_align::center) ? pad / 2 : (align == fmt_align::right) ? pad : 0;
+  const int rpad = pad - lpad;
+  auto write_fill = [&](int n) {
+    for (int i = 0; i < n; ++i)
+      for (std::size_t j = 0; j < fill.size(); ++j) *out++ = fill[j];
+  };
+  write_fill(lpad);
+  for (Char c : s) *out++ = c;
+  write_fill(rpad);
+  return out;
 }
 
 MP_UNITS_EXPORT_END
