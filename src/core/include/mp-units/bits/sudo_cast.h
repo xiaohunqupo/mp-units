@@ -190,7 +190,8 @@ template<Quantity To, typename FwdFrom, Quantity From = std::remove_cvref_t<FwdF
 {
   if constexpr (equivalent(From::unit, To::unit)) {
     // no scaling of the number needed
-    return {silent_cast<typename To::rep>(std::forward<FwdFrom>(q).numerical_value_is_an_implementation_detail_), To::reference};
+    return {silent_cast<typename To::rep>(std::forward<FwdFrom>(q).numerical_value_is_an_implementation_detail_),
+            To::reference};
   } else {
     return {sudo_cast_value<From::unit, typename From::rep, To::unit, typename To::rep>(
               std::forward<FwdFrom>(q).numerical_value_is_an_implementation_detail_),
