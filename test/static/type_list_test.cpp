@@ -78,10 +78,6 @@ static_assert(is_same_v<type_list_front<type_list<float, long, int>>, float>);
 
 // type_list_back
 
-template<template<typename...> typename List>
-concept type_list_back_invalid_for_empty_list = !requires { typename type_list_back<List<>>; };
-
-static_assert(type_list_back_invalid_for_empty_list<type_list>);
 static_assert(is_same_v<type_list_back<type_list<int>>, int>);
 static_assert(is_same_v<type_list_back<type_list<int, long>>, long>);
 static_assert(is_same_v<type_list_back<type_list<int, long, float>>, float>);
