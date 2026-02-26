@@ -375,14 +375,14 @@ struct named_unit<Symbol, QS, PO> : detail::unit_interface {
  * @tparam Unit a unit for which we provide a special name
  */
 template<symbol_text Symbol, Unit auto U>
-  requires(!Symbol.empty()) && detail::magnitude_is_positive<mp_units::get_canonical_unit(U).mag>
+  requires(!Symbol.empty())
 struct named_unit<Symbol, U> : decltype(U)::_base_type_ {
   using _base_type_ = named_unit;           // exposition only
   static constexpr auto _symbol_ = Symbol;  ///< Unique unit identifier
 };
 
 template<symbol_text Symbol, Unit auto U, PointOrigin auto PO>
-  requires(!Symbol.empty()) && detail::magnitude_is_positive<mp_units::get_canonical_unit(U).mag>
+  requires(!Symbol.empty())
 struct named_unit<Symbol, U, PO> : decltype(U)::_base_type_ {
   using _base_type_ = named_unit;           // exposition only
   static constexpr auto _symbol_ = Symbol;  ///< Unique unit identifier
@@ -399,8 +399,7 @@ struct named_unit<Symbol, U, PO> : decltype(U)::_base_type_ {
  * @tparam QuantitySpec a specification of a quantity to be measured with this unit
  */
 template<symbol_text Symbol, Unit auto U, detail::QuantityKindSpec auto QS>
-  requires(!Symbol.empty()) && (QS.dimension == detail::get_associated_quantity(U).dimension) &&
-          detail::magnitude_is_positive<mp_units::get_canonical_unit(U).mag>
+  requires(!Symbol.empty()) && (QS.dimension == detail::get_associated_quantity(U).dimension)
 struct named_unit<Symbol, U, QS> : decltype(U)::_base_type_ {
   using _base_type_ = named_unit;           // exposition only
   static constexpr auto _symbol_ = Symbol;  ///< Unique unit identifier
@@ -408,8 +407,7 @@ struct named_unit<Symbol, U, QS> : decltype(U)::_base_type_ {
 };
 
 template<symbol_text Symbol, Unit auto U, detail::QuantityKindSpec auto QS, PointOrigin auto PO>
-  requires(!Symbol.empty()) && (QS.dimension == detail::get_associated_quantity(U).dimension) &&
-          detail::magnitude_is_positive<mp_units::get_canonical_unit(U).mag>
+  requires(!Symbol.empty()) && (QS.dimension == detail::get_associated_quantity(U).dimension)
 struct named_unit<Symbol, U, QS, PO> : decltype(U)::_base_type_ {
   using _base_type_ = named_unit;           // exposition only
   static constexpr auto _symbol_ = Symbol;  ///< Unique unit identifier
