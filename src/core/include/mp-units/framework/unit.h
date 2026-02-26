@@ -147,7 +147,6 @@ template<detail::SymbolicConstant... Expr>
 struct derived_unit;
 
 MP_UNITS_EXPORT struct one;
-MP_UNITS_EXPORT [[nodiscard]] MP_UNITS_CONSTEVAL Unit auto inverse(Unit auto u);
 
 namespace detail {
 
@@ -182,7 +181,7 @@ struct unit_interface {
   template<UnitMagnitude M, Unit U>
   [[nodiscard]] friend MP_UNITS_CONSTEVAL Unit auto operator/(M mag, U u)
   {
-    return mag * mp_units::inverse(u);
+    return mag * inverse(u);
   }
 
   /**
@@ -236,6 +235,18 @@ struct unit_interface {
   {
     return kind_of<detail::get_associated_quantity(U{})>;
   }
+
+  template<std::intmax_t Num, std::intmax_t Den = 1, Unit U>
+    requires(Den != 0)
+  [[nodiscard]] friend consteval Unit auto pow(U u)
+  {
+    return detail::expr_pow<Num, Den, derived_unit, struct one>(u);
+  }
+
+  [[nodiscard]] friend consteval Unit auto sqrt(Unit auto u) { return pow<1, 2>(u); }
+  [[nodiscard]] friend consteval Unit auto cbrt(Unit auto u) { return pow<1, 3>(u); }
+  [[nodiscard]] friend consteval Unit auto square(Unit auto u) { return pow<2>(u); }
+  [[nodiscard]] friend consteval Unit auto cubic(Unit auto u) { return pow<3>(u); }
 };
 
 template<Unit U, bool = requires { U::_point_origin_; }>
@@ -626,59 +637,6 @@ template<Unit T, typename... Expr>
 MP_UNITS_EXPORT_BEGIN
 
 [[nodiscard]] MP_UNITS_CONSTEVAL Unit auto inverse(Unit auto u) { return one / u; }
-
-/**
- * @brief Computes the value of a unit raised to the `Num/Den` power
- *
- * @tparam Num Exponent numerator
- * @tparam Den Exponent denominator
- * @param u Unit being the base of the operation
- *
- * @return Unit The result of computation
- */
-template<std::intmax_t Num, std::intmax_t Den = 1, Unit U>
-  requires(Den != 0)
-[[nodiscard]] consteval Unit auto pow(U u)
-{
-  return detail::expr_pow<Num, Den, derived_unit, struct one>(u);
-}
-
-/**
- * @brief Computes the square root of a unit
- *
- * @param u Unit being the base of the operation
- *
- * @return Unit The result of computation
- */
-[[nodiscard]] consteval Unit auto sqrt(Unit auto u) { return mp_units::pow<1, 2>(u); }
-
-/**
- * @brief Computes the cubic root of a unit
- *
- * @param u Unit being the base of the operation
- *
- * @return Unit The result of computation
- */
-[[nodiscard]] consteval Unit auto cbrt(Unit auto u) { return mp_units::pow<1, 3>(u); }
-
-/**
- * @brief Computes the square power of a unit
- *
- * @param u Unit being the base of the operation
- *
- * @return Unit The result of computation
- */
-[[nodiscard]] consteval Unit auto square(Unit auto u) { return mp_units::pow<2>(u); }
-
-/**
- * @brief Computes the cubic power of a unit
- *
- * @param u Unit being the base of the operation
- *
- * @return Unit The result of computation
- */
-[[nodiscard]] consteval Unit auto cubic(Unit auto u) { return mp_units::pow<3>(u); }
-
 
 // common dimensionless units
 // clang-format off

@@ -82,6 +82,16 @@ struct dimension_interface {
   {
     return is_same_v<Lhs, Rhs>;
   }
+
+  template<std::intmax_t Num, std::intmax_t Den = 1, Dimension D>
+    requires(Den != 0)
+  [[nodiscard]] friend consteval Dimension auto pow(D d)
+  {
+    return detail::expr_pow<Num, Den, derived_dimension, struct dimension_one>(d);
+  }
+
+  [[nodiscard]] friend consteval Dimension auto sqrt(Dimension auto d) { return pow<1, 2>(d); }
+  [[nodiscard]] friend consteval Dimension auto cbrt(Dimension auto d) { return pow<1, 3>(d); }
 };
 
 }  // namespace detail
@@ -179,41 +189,6 @@ MP_UNITS_EXPORT inline constexpr struct dimension_one final :
 MP_UNITS_EXPORT_BEGIN
 
 [[nodiscard]] consteval Dimension auto inverse(Dimension auto d) { return dimension_one / d; }
-
-/**
- * @brief Computes the value of a dimension raised to the `Num/Den` power
- *
- * @tparam Num Exponent numerator
- * @tparam Den Exponent denominator
- * @param d Dimension being the base of the operation
- *
- * @return Dimension The result of computation
- */
-template<std::intmax_t Num, std::intmax_t Den = 1, Dimension D>
-  requires(Den != 0)
-[[nodiscard]] consteval Dimension auto pow(D d)
-{
-  return detail::expr_pow<Num, Den, derived_dimension, struct dimension_one>(d);
-}
-
-/**
- * @brief Computes the square root of a dimension
- *
- * @param d Dimension being the base of the operation
- *
- * @return Dimension The result of computation
- */
-[[nodiscard]] consteval Dimension auto sqrt(Dimension auto d) { return mp_units::pow<1, 2>(d); }
-
-/**
- * @brief Computes the cubic root of a dimension
- *
- * @param d Dimension being the base of the operation
- *
- * @return Dimension The result of computation
- */
-[[nodiscard]] consteval Dimension auto cbrt(Dimension auto d) { return mp_units::pow<1, 3>(d); }
-
 
 struct dimension_symbol_formatting {
 #if MP_UNITS_COMP_CLANG || MP_UNITS_COMP_MSVC

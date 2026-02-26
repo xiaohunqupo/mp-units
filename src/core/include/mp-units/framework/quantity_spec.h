@@ -206,6 +206,18 @@ struct quantity_spec_interface_base {
   {
     return is_same_v<Lhs, Rhs>;
   }
+
+  template<std::intmax_t Num, std::intmax_t Den = 1, QuantitySpec Q>
+    requires(Den != 0)
+  [[nodiscard]] friend consteval QuantitySpec auto pow(Q q)
+  {
+    return detail::clone_kind_of<Q{}>(
+      detail::expr_pow<Num, Den, derived_quantity_spec, struct dimensionless, detail::type_list_of_quantity_spec_less>(
+        detail::remove_kind(q)));
+  }
+
+  [[nodiscard]] friend consteval QuantitySpec auto sqrt(QuantitySpec auto q) { return pow<1, 2>(q); }
+  [[nodiscard]] friend consteval QuantitySpec auto cbrt(QuantitySpec auto q) { return pow<1, 3>(q); }
 };
 
 [[nodiscard]] consteval bool explicitly_convertible_to_dimensionless(QuantitySpec auto qs);
@@ -641,50 +653,7 @@ template<QuantitySpec Q>
 
 }  // namespace detail
 
-MP_UNITS_EXPORT_BEGIN
-
-[[nodiscard]] consteval QuantitySpec auto inverse(QuantitySpec auto q) { return dimensionless / q; }
-
-
-/**
- * @brief Computes the value of a quantity specification raised to the `Num/Den` power
- *
- * @tparam Num Exponent numerator
- * @tparam Den Exponent denominator
- * @param q Quantity specification being the base of the operation
- *
- * @return QuantitySpec The result of computation
- */
-template<std::intmax_t Num, std::intmax_t Den = 1, QuantitySpec Q>
-  requires(Den != 0)
-[[nodiscard]] consteval QuantitySpec auto pow(Q q)
-{
-  return detail::clone_kind_of<Q{}>(
-    detail::expr_pow<Num, Den, derived_quantity_spec, struct dimensionless, detail::type_list_of_quantity_spec_less>(
-      detail::remove_kind(q)));
-}
-
-
-/**
- * @brief Computes the square root of a quantity specification
- *
- * @param q Quantity specification being the base of the operation
- *
- * @return QuantitySpec The result of computation
- */
-[[nodiscard]] consteval QuantitySpec auto sqrt(QuantitySpec auto q) { return mp_units::pow<1, 2>(q); }
-
-
-/**
- * @brief Computes the cubic root of a quantity specification
- *
- * @param q Quantity specification being the base of the operation
- *
- * @return QuantitySpec The result of computation
- */
-[[nodiscard]] consteval QuantitySpec auto cbrt(QuantitySpec auto q) { return mp_units::pow<1, 3>(q); }
-
-MP_UNITS_EXPORT_END
+MP_UNITS_EXPORT [[nodiscard]] consteval QuantitySpec auto inverse(QuantitySpec auto q) { return dimensionless / q; }
 
 namespace detail {
 

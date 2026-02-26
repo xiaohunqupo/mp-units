@@ -132,8 +132,8 @@ struct reference {
     return {};
   }
 
-  [[nodiscard]] friend consteval detail::reference_t<MP_UNITS_EXPRESSION_WORKAROUND(mp_units::inverse(Q{})),
-                                                     MP_UNITS_EXPRESSION_WORKAROUND(mp_units::inverse(U{}))>
+  [[nodiscard]] friend consteval detail::reference_t<MP_UNITS_EXPRESSION_WORKAROUND(inverse(Q{})),
+                                                     MP_UNITS_EXPRESSION_WORKAROUND(inverse(U{}))>
   inverse(reference)
   {
     return {};
@@ -150,8 +150,8 @@ struct reference {
    */
   template<std::intmax_t Num, std::intmax_t Den = 1>
     requires(Den != 0)
-  [[nodiscard]] friend consteval detail::reference_t<MP_UNITS_EXPRESSION_WORKAROUND((mp_units::pow<Num, Den>(Q{}))),
-                                                     MP_UNITS_EXPRESSION_WORKAROUND((mp_units::pow<Num, Den>(U{})))>
+  [[nodiscard]] friend consteval detail::reference_t<MP_UNITS_EXPRESSION_WORKAROUND((pow<Num, Den>(Q{}))),
+                                                     MP_UNITS_EXPRESSION_WORKAROUND((pow<Num, Den>(U{})))>
   pow(reference)
   {
     return {};
@@ -164,8 +164,8 @@ struct reference {
    *
    * @return The result of computation
    */
-  [[nodiscard]] friend consteval detail::reference_t<MP_UNITS_EXPRESSION_WORKAROUND(mp_units::sqrt(Q{})),
-                                                     MP_UNITS_EXPRESSION_WORKAROUND(mp_units::sqrt(U{}))>
+  [[nodiscard]] friend consteval detail::reference_t<MP_UNITS_EXPRESSION_WORKAROUND(sqrt(Q{})),
+                                                     MP_UNITS_EXPRESSION_WORKAROUND(sqrt(U{}))>
   sqrt(reference)
   {
     return {};
@@ -178,8 +178,8 @@ struct reference {
    *
    * @return The result of computation
    */
-  [[nodiscard]] friend consteval detail::reference_t<MP_UNITS_EXPRESSION_WORKAROUND(mp_units::cbrt(Q{})),
-                                                     MP_UNITS_EXPRESSION_WORKAROUND(mp_units::cbrt(U{}))>
+  [[nodiscard]] friend consteval detail::reference_t<MP_UNITS_EXPRESSION_WORKAROUND(cbrt(Q{})),
+                                                     MP_UNITS_EXPRESSION_WORKAROUND(cbrt(U{}))>
   cbrt(reference)
   {
     return {};
