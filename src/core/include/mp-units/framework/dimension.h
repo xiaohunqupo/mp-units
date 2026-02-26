@@ -234,29 +234,31 @@ namespace detail {
 
 template<typename CharT, std::output_iterator<CharT> Out, Dimension D>
   requires requires { D::_symbol_; }
-constexpr Out dimension_symbol_impl(Out out, D, const dimension_symbol_formatting& fmt, bool negative_power)
+[[nodiscard]] constexpr Out dimension_symbol_impl(Out out, D, const dimension_symbol_formatting& fmt,
+                                                  bool negative_power)
 {
   return copy_symbol<CharT>(D::_symbol_, fmt.char_set, negative_power, out);
 }
 
 template<typename CharT, std::output_iterator<CharT> Out, typename F, int Num, int... Den>
-constexpr auto dimension_symbol_impl(Out out, const power<F, Num, Den...>&, const dimension_symbol_formatting& fmt,
-                                     bool negative_power)
+[[nodiscard]] constexpr auto dimension_symbol_impl(Out out, const power<F, Num, Den...>&,
+                                                   const dimension_symbol_formatting& fmt, bool negative_power)
 {
   out = dimension_symbol_impl<CharT>(out, F{}, fmt, false);  // negative power component will be added below if needed
   return copy_symbol_exponent<CharT, Num, Den...>(fmt.char_set, negative_power, out);
 }
 
 template<typename CharT, std::output_iterator<CharT> Out, typename... Ms>
-constexpr Out dimension_symbol_impl(Out out, const type_list<Ms...>&, const dimension_symbol_formatting& fmt,
-                                    bool negative_power)
+[[nodiscard]] constexpr Out dimension_symbol_impl(Out out, const type_list<Ms...>&,
+                                                  const dimension_symbol_formatting& fmt, bool negative_power)
 {
   return (..., (out = dimension_symbol_impl<CharT>(out, Ms{}, fmt, negative_power)));
 }
 
 template<typename CharT, std::output_iterator<CharT> Out, typename... Nums, typename... Dens>
-constexpr Out dimension_symbol_impl(Out out, const type_list<Nums...>& nums, const type_list<Dens...>& dens,
-                                    const dimension_symbol_formatting& fmt)
+[[nodiscard]] constexpr Out dimension_symbol_impl(Out out, const type_list<Nums...>& nums,
+                                                  const type_list<Dens...>& dens,
+                                                  const dimension_symbol_formatting& fmt)
 {
   if constexpr (sizeof...(Nums) == 0 && sizeof...(Dens) == 0) {
     // dimensionless quantity
@@ -272,8 +274,8 @@ constexpr Out dimension_symbol_impl(Out out, const type_list<Nums...>& nums, con
 }
 
 template<typename CharT, std::output_iterator<CharT> Out, typename... Expr>
-constexpr Out dimension_symbol_impl(Out out, const derived_dimension_impl<Expr...>&,
-                                    const dimension_symbol_formatting& fmt, bool negative_power)
+[[nodiscard]] constexpr Out dimension_symbol_impl(Out out, const derived_dimension_impl<Expr...>&,
+                                                  const dimension_symbol_formatting& fmt, bool negative_power)
 {
   (void)negative_power;
   MP_UNITS_EXPECTS(negative_power == false);

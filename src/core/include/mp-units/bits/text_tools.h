@@ -99,7 +99,7 @@ template<std::intmax_t Value>
 }
 
 template<typename CharT, std::size_t N, std::size_t M, std::output_iterator<CharT> Out>
-constexpr Out copy(const symbol_text<N, M>& txt, character_set char_set, Out out)
+[[nodiscard]] constexpr Out copy(const symbol_text<N, M>& txt, character_set char_set, Out out)
 {
   if (char_set == character_set::utf8) {
     if constexpr (is_same_v<CharT, char8_t>)
@@ -123,7 +123,8 @@ constexpr Out copy(const symbol_text<N, M>& txt, character_set char_set, Out out
 }
 
 template<typename CharT, std::size_t N, std::size_t M, std::output_iterator<CharT> Out>
-constexpr Out copy_symbol(const symbol_text<N, M>& txt, character_set char_set, bool negative_power, Out out)
+[[nodiscard]] constexpr Out copy_symbol(const symbol_text<N, M>& txt, character_set char_set, bool negative_power,
+                                        Out out)
 {
   out = copy<CharT>(txt, char_set, out);
   if (negative_power) {
@@ -134,7 +135,7 @@ constexpr Out copy_symbol(const symbol_text<N, M>& txt, character_set char_set, 
 }
 
 template<typename CharT, int Num, int... Den, std::output_iterator<CharT> Out>
-constexpr Out copy_symbol_exponent(character_set char_set, bool negative_power, Out out)
+[[nodiscard]] constexpr Out copy_symbol_exponent(character_set char_set, bool negative_power, Out out)
 {
   constexpr ratio r{Num, Den...};
   if constexpr (r.den != 1) {

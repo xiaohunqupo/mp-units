@@ -281,7 +281,7 @@ template<auto... Ms>
 }
 
 template<typename CharT, std::output_iterator<CharT> Out>
-constexpr Out print_separator(Out out, const unit_symbol_formatting& fmt)
+[[nodiscard]] constexpr Out print_separator(Out out, const unit_symbol_formatting& fmt)
 {
   if (fmt.separator == unit_symbol_separator::half_high_dot) {
     if (fmt.char_set != character_set::utf8)
@@ -311,12 +311,12 @@ template<typename CharT, std::output_iterator<CharT> Out, auto M, auto... Rest>
     constexpr ratio r = get_exponent(T{});
     return copy_symbol_exponent<CharT, detail::abs(r.num), r.den>(fmt.char_set, negative_power, out);
   };
-  return (to_symbol(M), ..., (print_separator<CharT>(out, fmt), to_symbol(Rest)));
+  return (to_symbol(M), ..., (out = print_separator<CharT>(out, fmt), to_symbol(Rest)));
 }
 
 template<typename CharT, UnitMagnitude auto Num, UnitMagnitude auto Den, UnitMagnitude auto NumConstants,
          UnitMagnitude auto DenConstants, std::intmax_t Exp10, std::output_iterator<CharT> Out>
-constexpr Out magnitude_symbol_impl(Out out, const unit_symbol_formatting& fmt)
+[[nodiscard]] constexpr Out magnitude_symbol_impl(Out out, const unit_symbol_formatting& fmt)
 {
   bool numerator = false;
   constexpr auto num_value = get_value<std::intmax_t>(Num);
@@ -488,7 +488,7 @@ private:
   }
 
   template<typename CharT, std::output_iterator<CharT> Out>
-  friend constexpr Out magnitude_symbol(Out out, unit_magnitude, const unit_symbol_formatting& fmt)
+  [[nodiscard]] friend constexpr Out magnitude_symbol(Out out, unit_magnitude, const unit_symbol_formatting& fmt)
   {
     if constexpr (unit_magnitude{} == unit_magnitude<1>{}) {
       return out;
