@@ -230,6 +230,12 @@ struct unit_interface {
   {
     return self;
   }
+
+  template<Unit U>
+  [[nodiscard]] friend consteval QuantitySpec auto get_quantity_spec(U)
+  {
+    return kind_of<detail::get_associated_quantity(U{})>;
+  }
 };
 
 template<Unit U, bool = requires { U::_point_origin_; }>

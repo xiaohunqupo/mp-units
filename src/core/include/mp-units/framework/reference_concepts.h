@@ -35,15 +35,6 @@ struct reference;
 
 MP_UNITS_EXPORT_BEGIN
 
-template<Unit U>
-[[nodiscard]] consteval QuantitySpec auto get_quantity_spec(U);
-
-template<typename Q, typename U>
-[[nodiscard]] consteval QuantitySpec auto get_quantity_spec(reference<Q, U>)
-{
-  return Q{};
-}
-
 /**
  * @brief A concept matching all references in the library.
  *
@@ -58,7 +49,7 @@ concept Reference = Unit<T> || is_specialization_of<T, reference>;
  * Satisfied by all references for which @c QuantitySpecOf<QS> is true.
  */
 template<typename T, auto QS>
-concept ReferenceOf = Reference<T> && QuantitySpecOf<decltype(mp_units::get_quantity_spec(T{})), QS>;
+concept ReferenceOf = Reference<T> && QuantitySpecOf<decltype(get_quantity_spec(T{})), QS>;
 
 MP_UNITS_EXPORT_END
 

@@ -110,7 +110,7 @@ concept DerivedQuantitySpec =
 template<QuantitySpec QS, UnitOf<QS{}> U>
 [[nodiscard]] consteval Reference auto make_reference(QS, U u)
 {
-  if constexpr (requires { requires(mp_units::get_quantity_spec(U{}) == QS{}); })
+  if constexpr (requires { requires(get_quantity_spec(U{}) == QS{}); })
     return u;
   else
     return reference<QS, U>{};
