@@ -549,24 +549,73 @@ struct expr_type_map<power<F, Ints...>, Proj> {
   using type = power<Proj<F>, Ints...>;
 };
 
-template<typename T>
-[[nodiscard]] consteval auto map_power(T t)
+// Distributes exponent R over each element of a `type_list` via `power_or_T`.
+template<ratio R, typename... Ts>
+[[nodiscard]] consteval auto apply_rational_power(type_list<Ts...>)
 {
-  return t;
+  return type_list<power_or_T<Ts, R>...>{};
 }
 
-template<typename T, auto... Ints>
-[[nodiscard]] consteval auto map_power(power<T, Ints...>)
+/**
+ * @brief Returns the numerator and denominator contributions of a single projected element.
+ *
+ * Three cases once `Projected` is examined:
+ *  - A `To<...>` composite: expand its `_num_`/`_den_` directly.
+ *  - A `power<To<...>, R>`: distribute the exponent over `_num_`/`_den_` (mirrors `expr_pow`,
+ *    avoids leaving an unsortable `power<To<...>, R>` as a leaf).
+ *  - Otherwise (leaf): contribute `Projected` as a single numerator element.
+ */
+template<template<typename...> typename To, typename Projected>
+[[nodiscard]] consteval auto expr_map_expand(Projected)
 {
-  return pow<Ints...>(T{});  // has to be unqualified for late binding
+  if constexpr (is_specialization_of<Projected, To>)
+    return expr_fractions_result<typename Projected::_num_, typename Projected::_den_>{};
+  else if constexpr (is_specialization_of_power<Projected>) {
+    if constexpr (is_specialization_of<typename Projected::_factor_, To>) {
+      using inner = typename Projected::_factor_;
+      return expr_fractions_result<decltype(apply_rational_power<Projected::_exponent_>(typename inner::_num_{})),
+                                   decltype(apply_rational_power<Projected::_exponent_>(typename inner::_den_{}))>{};
+    } else
+      return expr_fractions_result<type_list<Projected>, type_list<>>{};
+  } else
+    return expr_fractions_result<type_list<Projected>, type_list<>>{};
 }
+
+// Projects T through Proj and returns its expr_fractions_result via expr_map_expand.
+// power<OneType, N> is treated as identity — it reduces to OneType at value level.
+template<template<typename> typename Proj, template<typename...> typename To, SymbolicArg OneType, typename T>
+[[nodiscard]] consteval auto expr_map_contributions(T)
+{
+  using projected = typename expr_type_map<T, Proj>::type;
+  if constexpr (is_same_v<projected, OneType>)
+    return expr_fractions_result<>{};
+  else if constexpr (is_specialization_of_power<projected>) {
+    if constexpr (is_same_v<typename projected::_factor_, OneType>)
+      return expr_fractions_result<>{};
+    else
+      return expr_map_expand<To>(projected{});
+  } else
+    return expr_map_expand<To>(projected{});
+}
+
+
+template<template<typename> typename Proj, template<typename...> typename To, SymbolicArg OneType, typename T>
+using expr_map_contribution_t = decltype(expr_map_contributions<Proj, To, OneType>(T{}));
+
 
 template<template<typename> typename Proj, template<typename...> typename To, SymbolicArg OneType,
          template<typename, typename> typename Pred, typename... Nums, typename... Dens>
 [[nodiscard]] consteval auto expr_map_impl(type_list<Nums...>, type_list<Dens...>)
 {
-  return (OneType{} * ... * detail::map_power(typename expr_type_map<Nums, Proj>::type{})) /
-         (OneType{} * ... * detail::map_power(typename expr_type_map<Dens, Proj>::type{}));
+  // Single get_optimized_expression call: project + expand each element, merge the resulting
+  // sorted sub-lists (merge preserves predicate safety; sort would invoke it on composites).
+  using outer_num =
+    type_list_merge_many_sorted<Pred, type_list<>, typename expr_map_contribution_t<Proj, To, OneType, Nums>::_num_...,
+                                typename expr_map_contribution_t<Proj, To, OneType, Dens>::_den_...>;
+  using outer_den =
+    type_list_merge_many_sorted<Pred, type_list<>, typename expr_map_contribution_t<Proj, To, OneType, Nums>::_den_...,
+                                typename expr_map_contribution_t<Proj, To, OneType, Dens>::_num_...>;
+  return std::identity{}(get_optimized_expression<outer_num, outer_den, OneType, Pred, To>());
 }
 
 /**

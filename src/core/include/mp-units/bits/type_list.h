@@ -260,6 +260,21 @@ struct type_list_merge_sorted_impl<List<Lhs1, LhsRest...>, List<Rhs1, RhsRest...
 template<TypeList SortedList1, TypeList SortedList2, template<typename, typename> typename Pred>
 using type_list_merge_sorted = type_list_merge_sorted_impl<SortedList1, SortedList2, Pred>::type;
 
+// merge_many_sorted
+// Merges any number of already-sorted type_lists into a single sorted type_list.
+// `Acc` is the initial accumulator (typically `List<>` matching the concrete list template).
+template<template<typename, typename> typename Pred, typename Acc, typename... Rest>
+struct type_list_merge_many_sorted_impl {
+  using type = Acc;
+};
+template<template<typename, typename> typename Pred, typename Acc, typename Head, typename... Rest>
+struct type_list_merge_many_sorted_impl<Pred, Acc, Head, Rest...> {
+  using type = typename type_list_merge_many_sorted_impl<Pred, type_list_merge_sorted<Acc, Head, Pred>, Rest...>::type;
+};
+
+template<template<typename, typename> typename Pred, TypeList Acc, TypeList... Lists>
+using type_list_merge_many_sorted = typename type_list_merge_many_sorted_impl<Pred, Acc, Lists...>::type;
+
 // sort
 template<typename List, template<typename, typename> typename Pred>
 struct type_list_sort_impl;
