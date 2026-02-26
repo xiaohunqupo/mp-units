@@ -274,6 +274,11 @@ template<Reference R, typename Q>
 // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
 constexpr auto operator/(R, Q&& q) = delete;
 
+[[nodiscard]] consteval Unit auto get_common_unit(Unit auto u);
+
+template<Unit U1, detail::UnitConvertibleTo<U1{}> U2>
+[[nodiscard]] consteval Unit auto get_common_unit(U1 u1, U2 u2);
+
 [[nodiscard]] consteval Unit auto get_common_reference(Unit auto u1, Unit auto u2, Unit auto... rest)
   requires requires {
     mp_units::get_common_quantity_spec(mp_units::get_quantity_spec(u1), mp_units::get_quantity_spec(u2),
