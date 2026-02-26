@@ -908,6 +908,24 @@ class MP_UNITS_STD_FMT::formatter<mp_units::quantity<Reference, Rep>, Char> {
     }
   };
 
+  // Type-erased handler passed to parse_quantity_specs at runtime.
+  // Being a concrete (non-template) type it ensures parse_quantity_specs is instantiated
+  // only once for the runtime path, regardless of how many OutputIt types are used.
+  struct erased_handler {
+    void* self;
+    void (*on_number_fn)(void*);
+    void (*on_maybe_space_fn)(void*);
+    void (*on_unit_fn)(void*);
+    void (*on_dimension_fn)(void*);
+    void (*on_text_fn)(void*, const Char*, const Char*);
+
+    void on_number() { on_number_fn(self); }
+    void on_maybe_space() { on_maybe_space_fn(self); }
+    void on_unit() { on_unit_fn(self); }
+    void on_dimension() { on_dimension_fn(self); }
+    void on_text(const Char* begin, const Char* end) { on_text_fn(self, begin, end); }
+  };
+
   template<typename OutputIt>
   struct quantity_formatter {
     const formatter& f;
@@ -933,10 +951,21 @@ class MP_UNITS_STD_FMT::formatter<mp_units::quantity<Reference, Rep>, Char> {
       out = MP_UNITS_STD_FMT::vformat_to(out, locale, f.dimension_format_str_,
                                          MP_UNITS_STD_FMT::make_format_args(q.dimension));
     }
-    template<std::forward_iterator It>
-    void on_text(It begin, It end) const
+    void on_text(const Char* begin, const Char* end) { mp_units::detail::copy(begin, end, out); }
+
+    // Static trampolines for erased_handler — tiny, do not drag in parse_quantity_specs.
+    static void on_number_erased(void* p) { static_cast<quantity_formatter*>(p)->on_number(); }
+    static void on_maybe_space_erased(void* p) { static_cast<quantity_formatter*>(p)->on_maybe_space(); }
+    static void on_unit_erased(void* p) { static_cast<quantity_formatter*>(p)->on_unit(); }
+    static void on_dimension_erased(void* p) { static_cast<quantity_formatter*>(p)->on_dimension(); }
+    static void on_text_erased(void* p, const Char* b, const Char* e)
     {
-      mp_units::detail::copy(begin, end, out);
+      static_cast<quantity_formatter*>(p)->on_text(b, e);
+    }
+
+    erased_handler erase()
+    {
+      return {this, on_number_erased, on_maybe_space_erased, on_unit_erased, on_dimension_erased, on_text_erased};
     }
   };
   template<typename OutputIt, typename... Args>
@@ -1042,12 +1071,12 @@ class MP_UNITS_STD_FMT::formatter<mp_units::quantity<Reference, Rep>, Char> {
     return begin;
   }
 
-  template<typename OutputIt, typename FormatContext>
-  OutputIt format_quantity(OutputIt out, const quantity_t& q, FormatContext& ctx) const
+  // Writes the quantity content to `out`. Used for the width-buffering path.
+  template<typename OutputIt>
+  OutputIt format_to(OutputIt out, const quantity_t& q, const std::locale& locale) const
   {
-    const std::locale locale = MP_UNITS_FMT_LOCALE(ctx.locale());
     if (modifiers_format_str_.empty()) {
-      // default
+      // default layout: rep [space] unit
       out = MP_UNITS_STD_FMT::vformat_to(out, locale, rep_format_str_,
                                          MP_UNITS_STD_FMT::make_format_args(q.numerical_value_ref_in(q.unit)));
       if constexpr (mp_units::space_before_unit_symbol<unit>) *out++ = ' ';
@@ -1055,7 +1084,10 @@ class MP_UNITS_STD_FMT::formatter<mp_units::quantity<Reference, Rep>, Char> {
     }
     // user provided format
     quantity_formatter f{*this, out, q, locale};
-    parse_quantity_specs(modifiers_format_str_.data(), modifiers_format_str_.data() + modifiers_format_str_.size(), f);
+    // Use erased_handler so parse_quantity_specs is instantiated only once (with erased_handler),
+    // not once per OutputIt type.
+    auto eh = f.erase();
+    parse_quantity_specs(modifiers_format_str_.data(), modifiers_format_str_.data() + modifiers_format_str_.size(), eh);
     return f.out;
   }
 
@@ -1081,7 +1113,9 @@ public:
     mp_units::detail::handle_dynamic_spec<mp_units::detail::width_checker>(specs.width, specs.width_ref, ctx);
 
     if (specs.width == 0 && modifiers_format_str_.empty()) {
-      // Common fast path: call pre-parsed sub-formatters directly — no vformat_to, no allocation
+      // Fast path: no modifiers and no width — call pre-parsed sub-formatters directly.
+      // No vformat_to, no locale extraction, no allocation. Works correctly even when
+      // N[...]/U[...]/D[...] sub-specs were given: the spec is already encoded in the formatters.
       ctx.advance_to(rep_formatter_.format(q.numerical_value_ref_in(q.unit), ctx));
       if constexpr (mp_units::space_before_unit_symbol<unit>) {
         auto it = ctx.out();
@@ -1090,13 +1124,13 @@ public:
       }
       return unit_formatter_.format(q.unit, ctx);
     }
-    if (specs.width == 0) {
-      // Custom modifiers, no width
-      format_quantity(ctx.out(), q, ctx);
-      return ctx.out();
-    }
+
+    // Slow path: modifiers or width — must buffer or use vformat_to.
+    const std::locale locale = MP_UNITS_FMT_LOCALE(ctx.locale());
+    if (specs.width == 0) return format_to(ctx.out(), q, locale);
+
     std::basic_string<Char> quantity_buffer;
-    format_quantity(std::back_inserter(quantity_buffer), q, ctx);
+    format_to(std::back_inserter(quantity_buffer), q, locale);
     return mp_units::detail::write_padded<Char>(ctx.out(), std::basic_string_view<Char>{quantity_buffer}, specs.width,
                                                 specs.align, specs.fill);
   }

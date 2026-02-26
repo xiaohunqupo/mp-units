@@ -1040,12 +1040,12 @@ public:
     auto specs = specs_;
     mp_units::detail::handle_dynamic_spec<mp_units::detail::width_checker>(specs.width, specs.width_ref, ctx);
 
-    if (specs.width == 0)
-      // Avoid extra copying if width is not specified
-      return mp_units::unit_symbol_to<Char>(ctx.out(), u, specs);
-    std::basic_string<Char> unit_buffer;
-    mp_units::unit_symbol_to<Char>(std::back_inserter(unit_buffer), u, specs);
-    return mp_units::detail::write_padded<Char>(ctx.out(), std::basic_string_view<Char>{unit_buffer}, specs.width,
+    // Use a fixed-size stack buffer so that unit_symbol_to is always instantiated
+    // with Char* regardless of the FormatContext iterator type. This collapses all
+    // call-site instantiations of unit_symbol_impl to a single one (Char*).
+    Char buf[128];
+    const Char* const end = mp_units::unit_symbol_to<Char>(buf, u, specs);
+    return mp_units::detail::write_padded<Char>(ctx.out(), std::basic_string_view<Char>{buf, end}, specs.width,
                                                 specs.align, specs.fill);
   }
 };
