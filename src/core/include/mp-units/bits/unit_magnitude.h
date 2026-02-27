@@ -444,14 +444,14 @@ private:
   // Magnitude numerator and denominator implementation.
   [[nodiscard]] friend consteval auto numerator(unit_magnitude)
   {
-    return (integer_part(unit_magnitude<Ms>{}) * ... * unit_magnitude<>{});
+    return (mp_units::detail::integer_part(unit_magnitude<Ms>{}) * ... * unit_magnitude<>{});
   }
 
   [[nodiscard]] friend consteval auto denominator(unit_magnitude) { return numerator(pow<-1>(unit_magnitude{})); }
 
   [[nodiscard]] friend consteval auto remove_positive_powers(unit_magnitude)
   {
-    return (unit_magnitude<>{} * ... * remove_positive_power(unit_magnitude<Ms>{}));
+    return (unit_magnitude<>{} * ... * mp_units::detail::remove_positive_power(unit_magnitude<Ms>{}));
   }
 
   [[nodiscard]] friend consteval auto common_magnitude_type_impl(unit_magnitude)
@@ -461,12 +461,14 @@ private:
 
   [[nodiscard]] friend consteval auto extract_components(unit_magnitude)
   {
-    constexpr auto ratio = (unit_magnitude<>{} * ... * remove_mag_constants(unit_magnitude<Ms>{}));
+    constexpr auto ratio = (unit_magnitude<>{} * ... * mp_units::detail::remove_mag_constants(unit_magnitude<Ms>{}));
     if constexpr (ratio == unit_magnitude{})
       return std::tuple{ratio, unit_magnitude<>{}, unit_magnitude<>{}};
     else {
-      constexpr auto num_constants = (unit_magnitude<>{} * ... * only_positive_mag_constants(unit_magnitude<Ms>{}));
-      constexpr auto den_constants = (unit_magnitude<>{} * ... * only_negative_mag_constants(unit_magnitude<Ms>{}));
+      constexpr auto num_constants =
+        (unit_magnitude<>{} * ... * mp_units::detail::only_positive_mag_constants(unit_magnitude<Ms>{}));
+      constexpr auto den_constants =
+        (unit_magnitude<>{} * ... * mp_units::detail::only_negative_mag_constants(unit_magnitude<Ms>{}));
       return std::tuple{ratio, num_constants, den_constants};
     }
   }
