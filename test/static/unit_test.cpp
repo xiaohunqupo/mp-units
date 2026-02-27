@@ -81,8 +81,9 @@ inline constexpr auto kilometre = kilo<metre>;
 inline constexpr auto kilojoule = kilo<joule>;
 
 // physical constant units
-inline constexpr struct standard_gravity_ final : named_unit<symbol_text{u8"g₀", "g_0"}, mag_ratio<980'665, 100'000> * metre / square(second)> {} standard_gravity;
-inline constexpr struct speed_of_light_in_vacuum_ final : named_unit<"c", mag<299'792'458> * metre / second> {} speed_of_light_in_vacuum;
+inline constexpr struct standard_gravity_ final : named_constant<symbol_text{u8"g₀", "g_0"}, mag_ratio<980'665, 100'000> * metre / square(second)> {} standard_gravity;
+inline constexpr struct speed_of_light_in_vacuum_ final : named_constant<"c", mag<299'792'458> * metre / second> {} speed_of_light_in_vacuum;
+inline constexpr struct helion_g_factor final : named_constant<symbol_text{u8"𝘨ₕ", "g_h"}, mag<-ratio{4'255'250'615, 1'000'000'000}> * one> {} helion_g_factor;
 
 // clang-format on
 
@@ -362,6 +363,11 @@ static_assert(is_of_type<get_canonical_unit(standard_gravity* gram).reference_un
                          derived_unit<gram_, metre_, per<power<second_, 2>>>>);
 static_assert(is_of_type<get_canonical_unit(standard_gravity / speed_of_light_in_vacuum).reference_unit,
                          derived_unit<one_, per<second_>>>);
+
+// negative named constant
+static_assert(Unit<MP_UNITS_NONCONST_TYPE(helion_g_factor)>);
+static_assert(!PrefixableUnit<MP_UNITS_NONCONST_TYPE(helion_g_factor)>);
+static_assert(get_canonical_unit(helion_g_factor).mag == mag<-ratio{4'255'250'615, 1'000'000'000}>);
 
 // operations commutativity
 constexpr auto u1 = mag<1000> * kilometre / hour;

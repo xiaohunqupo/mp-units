@@ -69,18 +69,18 @@ constexpr std::optional<std::intmax_t>
   known_first_factor = std::nullopt;
 
 template<detail::MagArg auto V>
-  requires(detail::get_base_value(V) > 0)
+  requires detail::is_nonzero_mag_arg<V>
 constexpr UnitMagnitude auto mag = detail::make_magnitude<V>();
 
 template<std::intmax_t N, std::intmax_t D>
-  requires(N > 0)
-constexpr UnitMagnitude auto mag_ratio = detail::prime_factorization_v<N> / detail::prime_factorization_v<D>;
+  requires(N != 0)
+constexpr UnitMagnitude auto mag_ratio = detail::make_magnitude<detail::ratio{N, D}>();
 
 /**
  * @brief  Create a Magnitude which is some rational number raised to a rational power.
  */
 template<detail::MagArg auto Base, int Num, int Den = 1>
-  requires(detail::get_base_value(Base) > 0)
+  requires detail::is_positive_mag_arg<Base>
 constexpr UnitMagnitude auto mag_power = pow<Num, Den>(mag<Base>);
 
 /**
@@ -103,7 +103,7 @@ namespace detail {
 
 // This is introduced to break the dependency cycle between `unit_magnitude::_magnitude_text` and `prime_factorization`
 template<MagArg auto Base, int Num, int Den>
-  requires(get_base_value(Base) > 0)
+  requires is_positive_mag_arg<Base>
 [[nodiscard]] consteval UnitMagnitude auto mag_power_lazy()
 {
   return pow<Num, Den>(mag<Base>);

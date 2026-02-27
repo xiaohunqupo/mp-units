@@ -52,7 +52,24 @@ import std;
 namespace mp_units::detail {
 
 template<typename T>
-concept MagArg = std::integral<T> || is_mag_constant<T>;
+concept MagArg = std::integral<T> || is_mag_constant<T> || is_same_v<T, ratio>;
+
+/**
+ * @brief  A sentinel type representing the factor (-1) in a unit magnitude.
+ *
+ * Always appears as the first element in a pack when present.  Two occurrences cancel each other out.
+ * This enables support for negative magnitudes in named constants.
+ */
+struct negative_tag {};
+
+template<auto H, auto...>
+consteval auto first_mag_arg()
+{
+  return H;
+}
+
+template<typename M>
+constexpr bool is_negative_tag = is_same_v<MP_UNITS_REMOVE_CONST(M), negative_tag>;
 
 /**
  * @brief  Any type which can be used as a basis vector in a power_v.
@@ -91,9 +108,17 @@ template<typename T>
     return get_base_value(T::base);
   else if constexpr (is_mag_constant<T>)
     return element._value_;
+  else if constexpr (is_negative_tag<T>)
+    return std::intmax_t{-1};  // sorts before all positive prime bases
   else
     return element;
 }
+
+template<MagArg auto V>
+constexpr bool is_nonzero_mag_arg = get_base_value(V) != 0;
+
+template<MagArg auto V>
+constexpr bool is_positive_mag_arg = get_base_value(V) > 0;
 
 template<auto V, ratio R>
 [[nodiscard]] consteval auto power_v_or_T()
@@ -129,6 +154,13 @@ template<typename T>
   //
   // Note that since this function should only be called at compile time, the point of these
   // terminations is to act as "static_assert substitutes", not to actually terminate at runtime.
+
+  // The negative_tag sentinel represents the factor (-1).
+  if constexpr (is_negative_tag<decltype(get_base(el))>) {
+    static_assert(!std::is_unsigned_v<T>, "Cannot represent a negative magnitude value in an unsigned type");
+    return widen_t<T>{-1};
+  }
+
   const auto exp = get_exponent(el);
 
   if (exp.num < 0) {
@@ -156,18 +188,28 @@ template<typename T>
 
 [[nodiscard]] consteval bool is_rational_impl(auto element)
 {
-  return std::is_integral_v<decltype(get_base(element))> && get_exponent(element).den == 1;
+  if constexpr (is_negative_tag<decltype(element)>)
+    return true;  // (-1) is a rational number
+  else
+    return std::is_integral_v<decltype(get_base(element))> && get_exponent(element).den == 1;
 }
 
 [[nodiscard]] consteval bool is_integral_impl(auto element)
 {
-  return is_rational_impl(element) && get_exponent(element).num > 0;
+  if constexpr (is_negative_tag<decltype(element)>)
+    return true;  // (-1) is an integer
+  else
+    return is_rational_impl(element) && get_exponent(element).num > 0;
 }
 
 [[nodiscard]] consteval bool is_positive_integral_power_impl(auto element)
 {
-  auto exp = get_exponent(element);
-  return exp.den == 1 && exp.num > 0;
+  if constexpr (is_negative_tag<decltype(element)>)
+    return false;  // (-1) is not a positive factor
+  else {
+    auto exp = get_exponent(element);
+    return exp.den == 1 && exp.num > 0;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -195,8 +237,18 @@ template<auto M>
 [[nodiscard]] consteval auto only_negative_mag_constants(unit_magnitude<M> m);
 
 template<MagArg auto Base, int Num, int Den = 1>
-  requires(get_base_value(Base) > 0)
+  requires is_positive_mag_arg<Base>
 [[nodiscard]] consteval UnitMagnitude auto mag_power_lazy();
+
+// Forward declarations; fully defined after unit_magnitude
+template<auto H, auto... Rest>
+[[nodiscard]] consteval auto abs_magnitude(unit_magnitude<H, Rest...>);
+[[nodiscard]] consteval auto abs_magnitude(unit_magnitude<>);
+
+template<int Num, int Den>
+[[nodiscard]] consteval auto pow_magnitude(unit_magnitude<>);
+template<int Num, int Den, auto H, auto... Rest>
+[[nodiscard]] consteval auto pow_magnitude(unit_magnitude<H, Rest...>);
 
 template<typename T>
 struct magnitude_base {};
@@ -218,7 +270,10 @@ struct magnitude_base<unit_magnitude<H, T...>> {
     } else {
       if constexpr (is_same_v<decltype(get_base(H)), decltype(get_base(H2))>) {
         constexpr auto partial_product = unit_magnitude<T...>{} * unit_magnitude<T2...>{};
-        if constexpr (get_exponent(H) + get_exponent(H2) == 0) {
+        if constexpr (is_negative_tag<decltype(get_base(H))>) {
+          // (-1) * (-1) = 1: two negatives cancel each other out
+          return partial_product;
+        } else if constexpr (get_exponent(H) + get_exponent(H2) == 0) {
           return partial_product;
         } else {
           // Make a new power_v with the common base of H and H2, whose power is their powers' sum.
@@ -436,7 +491,7 @@ private:
     if constexpr (Num == 0) {
       return unit_magnitude<>{};
     } else {
-      return unit_magnitude<power_v_or_T<get_base(Ms), get_exponent(Ms) * ratio{Num, Den}>()...>{};
+      return pow_magnitude<Num, Den>(unit_magnitude{});
     }
   }
 
@@ -447,7 +502,10 @@ private:
     return (mp_units::detail::integer_part(unit_magnitude<Ms>{}) * ... * unit_magnitude<>{});
   }
 
-  [[nodiscard]] friend consteval auto denominator(unit_magnitude) { return numerator(pow<-1>(unit_magnitude{})); }
+  [[nodiscard]] friend consteval auto denominator(unit_magnitude)
+  {
+    return numerator(pow<-1>(mp_units::detail::abs_magnitude(unit_magnitude{})));
+  }
 
   [[nodiscard]] friend consteval auto remove_positive_powers(unit_magnitude)
   {
@@ -476,7 +534,13 @@ private:
   template<typename T>
   [[nodiscard]] friend consteval ratio get_power([[maybe_unused]] T base, unit_magnitude)
   {
-    return ((get_base_value(Ms) == base ? get_exponent(Ms) : ratio{0}) + ... + ratio{0});
+    [[maybe_unused]] auto is_base = [&](auto element) consteval {
+      if constexpr (is_negative_tag<decltype(element)>)
+        return false;  // (-1) is not a base, it's a special sentinel
+      else
+        return get_base_value(element) == base;
+    };
+    return ((is_base(Ms) ? get_exponent(Ms) : ratio{0}) + ... + ratio{0});
   }
 
   [[nodiscard]] friend consteval std::intmax_t extract_power_of_10(unit_magnitude mag)
@@ -492,35 +556,70 @@ private:
   template<typename CharT, std::output_iterator<CharT> Out>
   [[nodiscard]] friend constexpr Out magnitude_symbol(Out out, unit_magnitude, const unit_symbol_formatting& fmt)
   {
-    if constexpr (unit_magnitude{} == unit_magnitude<1>{}) {
+    if constexpr (sizeof...(Ms) == 0) {
       return out;
     } else {
-      constexpr auto extract_res = extract_components(unit_magnitude{});
-      constexpr UnitMagnitude auto ratio = std::get<0>(extract_res);
-      constexpr UnitMagnitude auto num_constants = std::get<1>(extract_res);
-      constexpr UnitMagnitude auto den_constants = std::get<2>(extract_res);
-      constexpr std::intmax_t exp10 = extract_power_of_10(ratio);
-      if constexpr (abs(exp10) < 3) {
-        // print the value as a regular number (without exponent)
-        constexpr UnitMagnitude auto num = numerator(unit_magnitude{});
-        constexpr UnitMagnitude auto den = denominator(unit_magnitude{});
-        // TODO address the below
-        static_assert(ratio == num / den, "Printing rational powers not yet supported");
-        return magnitude_symbol_impl<CharT, num, den, num_constants, den_constants, 0>(out, fmt);
+      // If the magnitude is negative (starts with negative_tag), prepend '-' and delegate.
+      constexpr bool is_negative = sizeof...(Ms) > 0 && is_negative_tag<decltype(first_mag_arg<Ms...>())>;
+      if constexpr (is_negative) {
+        *out++ = '-';
+        constexpr UnitMagnitude auto abs_mag = mp_units::detail::abs_magnitude(unit_magnitude{});
+        return magnitude_symbol<CharT>(out, abs_mag, fmt);
       } else {
-        // print the value as a number with exponent
-        // if user wanted a regular number for this magnitude then probably a better scaled unit should be used
-        constexpr UnitMagnitude auto base = ratio / mag_power_lazy<10, exp10>();
-        constexpr UnitMagnitude auto num = numerator(base);
-        constexpr UnitMagnitude auto den = denominator(base);
+        constexpr auto extract_res = extract_components(unit_magnitude{});
+        constexpr UnitMagnitude auto ratio = std::get<0>(extract_res);
+        constexpr UnitMagnitude auto num_constants = std::get<1>(extract_res);
+        constexpr UnitMagnitude auto den_constants = std::get<2>(extract_res);
+        constexpr std::intmax_t exp10 = extract_power_of_10(ratio);
+        if constexpr (detail::abs(exp10) < 3) {
+          // print the value as a regular number (without exponent)
+          constexpr UnitMagnitude auto num = numerator(unit_magnitude{});
+          constexpr UnitMagnitude auto den = denominator(unit_magnitude{});
+          // TODO address the below
+          static_assert(ratio == num / den, "Printing rational powers not yet supported");
+          return magnitude_symbol_impl<CharT, num, den, num_constants, den_constants, 0>(out, fmt);
+        } else {
+          // print the value as a number with exponent
+          // if user wanted a regular number for this magnitude then probably a better scaled unit should be used
+          constexpr UnitMagnitude auto base = ratio / mp_units::detail::mag_power_lazy<10, exp10>();
+          constexpr UnitMagnitude auto num = numerator(base);
+          constexpr UnitMagnitude auto den = denominator(base);
 
-        // TODO address the below
-        static_assert(base == num / den, "Printing rational powers not yet supported");
-        return magnitude_symbol_impl<CharT, num, den, num_constants, den_constants, exp10>(out, fmt);
+          // TODO address the below
+          static_assert(base == num / den, "Printing rational powers not yet supported");
+          return magnitude_symbol_impl<CharT, num, den, num_constants, den_constants, exp10>(out, fmt);
+        }
       }
     }
   }
 };
+
+template<int Num, int Den>
+[[nodiscard]] consteval auto pow_magnitude(unit_magnitude<>)
+{
+  return unit_magnitude<>{};
+}
+
+template<int Num, int Den, auto H, auto... Rest>
+[[nodiscard]] consteval auto pow_magnitude(unit_magnitude<H, Rest...>)
+{
+  if constexpr (is_negative_tag<decltype(H)>) {
+    // Raising (-1) to the power Num/Den (in lowest terms):
+    //  - even denominator → taking an even root of a negative number → hard error
+    //  - even numerator   → result is positive (+1), negative_tag cancels out
+    //  - odd numerator    → result is negative (-1), negative_tag is preserved
+    static_assert(ratio{Num, Den}.den % 2 == 1, "Cannot take even root of negative magnitude");
+    constexpr auto rest_powered = pow_magnitude<Num, Den>(unit_magnitude<Rest...>{});
+    if constexpr (ratio{Num, Den}.num % 2 == 0)
+      return rest_powered;
+    else
+      return unit_magnitude<H>{} * rest_powered;
+  } else {
+    // No negative_tag at front: apply power uniformly to all elements.
+    return unit_magnitude<power_v_or_T<get_base(H), get_exponent(H) * ratio{Num, Den}>(),
+                          power_v_or_T<get_base(Rest), get_exponent(Rest) * ratio{Num, Den}>()...>{};
+  }
+}
 
 [[nodiscard]] consteval auto common_magnitude(unit_magnitude<>, UnitMagnitude auto m)
 {
@@ -532,26 +631,64 @@ private:
 }
 [[nodiscard]] consteval auto common_magnitude(unit_magnitude<> m, unit_magnitude<>) { return m; }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// `abs_magnitude` — strips the leading negative_tag if present, leaving the absolute value.
+
+template<auto H, auto... Rest>
+[[nodiscard]] consteval auto abs_magnitude(unit_magnitude<H, Rest...>)
+{
+  if constexpr (is_negative_tag<decltype(H)>)
+    return unit_magnitude<Rest...>{};
+  else
+    return unit_magnitude<H, Rest...>{};
+}
+
+[[nodiscard]] consteval auto abs_magnitude(unit_magnitude<>) { return unit_magnitude<>{}; }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// `magnitude_is_positive` — checks whether a magnitude is positive (i.e., has no negative_tag).
+
+// Uses a consteval function rather than `is_same_v<decltype(M), decltype(abs_magnitude(M))>` because GCC 12
+// incorrectly evaluates the latter to `false` for genuinely positive magnitudes in some constexpr contexts.
+[[nodiscard]] consteval bool check_magnitude_is_positive(unit_magnitude<>) { return true; }
+
+template<auto H, auto... Rest>
+[[nodiscard]] consteval bool check_magnitude_is_positive(unit_magnitude<H, Rest...>)
+{
+  return !is_negative_tag<decltype(H)>;
+}
+
+template<UnitMagnitude auto M>
+constexpr bool magnitude_is_positive = check_magnitude_is_positive(M);
 
 // The largest integer which can be extracted from any magnitude with only a single basis vector.
 template<auto M>
 [[nodiscard]] consteval auto integer_part(unit_magnitude<M>)
 {
-  constexpr auto power_num = get_exponent(M).num;
-  constexpr auto power_den = get_exponent(M).den;
-
-  if constexpr (std::is_integral_v<decltype(get_base(M))> && (power_num >= power_den)) {
-    // largest integer power
-    return unit_magnitude<power_v_or_T<get_base(M), power_num / power_den>()>{};  // Note: integer division intended
+  // The negative_tag is the integer (-1): include it in the integer part.
+  // The else is required so that the rest of the body (which calls get_exponent/get_base on M)
+  // is not instantiated for negative_tag, avoiding conflicting return type deductions.
+  if constexpr (is_negative_tag<decltype(M)>) {
+    return unit_magnitude<M>{};
   } else {
-    return unit_magnitude<>{};
+    constexpr auto power_num = get_exponent(M).num;
+    constexpr auto power_den = get_exponent(M).den;
+
+    if constexpr (std::is_integral_v<decltype(get_base(M))> && (power_num >= power_den)) {
+      // largest integer power
+      return unit_magnitude<power_v_or_T<get_base(M), power_num / power_den>()>{};  // Note: integer division intended
+    } else {
+      return unit_magnitude<>{};
+    }
   }
 }
 
 template<auto M>
 [[nodiscard]] consteval auto remove_positive_power(unit_magnitude<M> m)
 {
-  if constexpr (get_exponent(M).num < 0) {
+  if constexpr (is_negative_tag<decltype(M)>)
+    return unit_magnitude<>{};  // negative_tag is a sign sentinel, not a basis element; exclude it
+  else if constexpr (get_exponent(M).num < 0) {
     return m;
   } else {
     return unit_magnitude<>{};
@@ -561,7 +698,9 @@ template<auto M>
 template<auto M>
 [[nodiscard]] consteval auto remove_mag_constants(unit_magnitude<M> m)
 {
-  if constexpr (is_mag_constant<decltype(get_base(M))>)
+  if constexpr (is_negative_tag<decltype(M)>)
+    return m;  // negative_tag is a sign marker, not a mag_constant; keep it in the ratio part
+  else if constexpr (is_mag_constant<decltype(get_base(M))>)
     return unit_magnitude<>{};
   else
     return m;
@@ -570,7 +709,9 @@ template<auto M>
 template<auto M>
 [[nodiscard]] consteval auto only_positive_mag_constants(unit_magnitude<M> m)
 {
-  if constexpr (is_mag_constant<decltype(get_base(M))> && get_exponent(M) >= 0)
+  if constexpr (is_negative_tag<decltype(M)>)
+    return unit_magnitude<>{};
+  else if constexpr (is_mag_constant<decltype(get_base(M))> && get_exponent(M) >= 0)
     return m;
   else
     return unit_magnitude<>{};
@@ -579,7 +720,9 @@ template<auto M>
 template<auto M>
 [[nodiscard]] consteval auto only_negative_mag_constants(unit_magnitude<M> m)
 {
-  if constexpr (is_mag_constant<decltype(get_base(M))> && get_exponent(M) < 0)
+  if constexpr (is_negative_tag<decltype(M)>)
+    return unit_magnitude<>{};
+  else if constexpr (is_mag_constant<decltype(get_base(M))> && get_exponent(M) < 0)
     return m;
   else
     return unit_magnitude<>{};
@@ -621,9 +764,28 @@ constexpr auto prime_factorization_v = prime_factorization<N>::value;
 template<MagArg auto V>
 [[nodiscard]] consteval UnitMagnitude auto make_magnitude()
 {
-  if constexpr (is_mag_constant<MP_UNITS_REMOVE_CONST(decltype(V))>)
+  using mag_arg_type = MP_UNITS_REMOVE_CONST(decltype(V));
+
+  if constexpr (is_mag_constant<mag_arg_type>)
     return unit_magnitude<V>{};
-  else
+  else if constexpr (is_same_v<mag_arg_type, ratio>) {
+    // ratio{num, den}: factor out the sign, then factorize num and den
+    constexpr ratio abs_v{V.num < 0 ? -V.num : V.num, V.den};
+    constexpr bool negative = V.num < 0;
+    constexpr UnitMagnitude auto abs_mag = prime_factorization_v<abs_v.num> / prime_factorization_v<abs_v.den>;
+    if constexpr (negative)
+      return unit_magnitude<negative_tag{}>{} * abs_mag;
+    else
+      return abs_mag;
+  } else if constexpr (std::integral<mag_arg_type>) {
+    // Integer NTTP: factor out the sign, then prime-factorize the absolute value
+    constexpr auto abs_v = V < 0 ? -V : V;
+    constexpr UnitMagnitude auto abs_mag = prime_factorization_v<abs_v>;
+    if constexpr (V < 0)
+      return unit_magnitude<negative_tag{}>{} * abs_mag;
+    else
+      return abs_mag;
+  } else
     return prime_factorization_v<V>;
 }
 
