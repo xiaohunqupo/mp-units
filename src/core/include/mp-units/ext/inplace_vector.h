@@ -34,6 +34,7 @@ import std;
 #include <concepts>
 #include <cstddef>
 #include <iterator>
+#include <memory>
 #if MP_UNITS_HOSTED
 #include <stdexcept>
 #endif
