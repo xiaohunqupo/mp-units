@@ -33,6 +33,7 @@ import std;
 #else
 #include <concepts>
 #include <cstddef>
+#include <iterator>
 #if MP_UNITS_HOSTED
 #include <stdexcept>
 #endif
