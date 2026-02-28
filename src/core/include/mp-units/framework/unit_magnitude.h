@@ -72,9 +72,23 @@ template<detail::MagArg auto V>
   requires detail::is_nonzero_mag_arg<V>
 constexpr UnitMagnitude auto mag = detail::make_magnitude<V>();
 
+#if MP_UNITS_COMP_MSVC
+// Workaround for MSVC ICE with ratio as NTTP in make_magnitude
+template<std::intmax_t N, std::intmax_t D>
+  requires(N != 0)
+constexpr UnitMagnitude auto mag_ratio = []() consteval {
+  constexpr auto abs_n = N < 0 ? -N : N;
+  constexpr auto abs_mag = detail::prime_factorization_v<abs_n> / detail::prime_factorization_v<D>;
+  if constexpr (N < 0)
+    return detail::unit_magnitude<detail::negative_tag{}>{} * abs_mag;
+  else
+    return abs_mag;
+}();
+#else
 template<std::intmax_t N, std::intmax_t D>
   requires(N != 0)
 constexpr UnitMagnitude auto mag_ratio = detail::make_magnitude<detail::ratio{N, D}>();
+#endif
 
 /**
  * @brief  Create a Magnitude which is some rational number raised to a rational power.
